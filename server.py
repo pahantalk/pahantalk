@@ -38,15 +38,359 @@ HTML = """<!DOCTYPE html>
 <head>
     <title>ПАХАНТАЛК</title>
     <meta charset="utf-8">
-    <style>
-        body { background: #111; color: gold; font-family: Arial; padding:20px; max-width:600px; margin:0 auto; }
-        .container { background: #222; padding:20px; border-radius:10px; border:2px solid gold; }
-        input, button { padding:10px; margin:5px; background:#333; border:1px solid gold; color:gold; width:100%; }
-        button { background:gold; color:black; font-weight:bold; cursor:pointer; }
-        #messages { background:#1a1a1a; padding:10px; border-radius:5px; height:300px; overflow-y:auto; }
-        .msg { border-bottom:1px solid #333; padding:5px; }
-    </style>
-</head>
+</head> <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: #e7ebf0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+    }
+    
+    .container {
+        width: 100%;
+        max-width: 450px;
+        background: white;
+        border-radius: 24px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    h1 {
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        padding: 20px 16px 12px;
+        color: #222;
+        border-bottom: 1px solid #e9ecef;
+        margin: 0;
+    }
+    
+    .login-section, .chat-section {
+        padding: 16px;
+    }
+    
+    .input-group {
+        margin-bottom: 12px;
+    }
+    
+    input, button {
+        width: 100%;
+        padding: 14px 16px;
+        border: none;
+        border-radius: 14px;
+        font-size: 16px;
+        outline: none;
+        transition: all 0.2s;
+    }
+    
+    input {
+        background: #f4f6f9;
+        border: 1px solid #e9ecef;
+    }
+    
+    input:focus {
+        border-color: #3390ec;
+        background: white;
+    }
+    
+    button {
+        background: #3390ec;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+    
+    button:hover {
+        background: #2a7ad0;
+    }
+    
+    button.secondary {
+        background: #f4f6f9;
+        color: #222;
+        border: 1px solid #e9ecef;
+    }
+    
+    button.secondary:hover {
+        background: #e9ecef;
+    }
+    
+    .chat-header {
+        background: white;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #3390ec;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    .username {
+        font-weight: 600;
+        color: #222;
+    }
+    
+    .logout-btn {
+        background: #f4f6f9;
+        color: #222;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-size: 14px;
+        border: 1px solid #e9ecef;
+        width: auto;
+    }
+    
+    .logout-btn:hover {
+        background: #e9ecef;
+    }
+    
+    .compose-area {
+        padding: 12px 16px;
+        background: white;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .to-input {
+        width: 100%;
+        padding: 10px 12px;
+        background: #f4f6f9;
+        border-radius: 20px;
+        border: 1px solid #e9ecef;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .message-input-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: #f4f6f9;
+        border-radius: 25px;
+        padding: 4px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .message-input-row input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 10px 12px;
+    }
+    
+    .message-input-row button {
+        width: auto;
+        padding: 10px 20px;
+        border-radius: 25px;
+        margin: 0;
+        background: #3390ec;
+    }
+    
+    .messages-area {
+        height: 450px;
+        overflow-y: auto;
+        padding: 16px;
+        background: #e7ebf0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .message {
+        max-width: 80%;
+        padding: 10px 14px;
+        border-radius: 18px;
+        word-wrap: break-word;
+        animation: messagePop 0.2s ease;
+        position: relative;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+    
+    @keyframes messagePop {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .message.own {
+        background: #3390ec;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message.other {
+        background: white;
+        color: #222;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .message strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: inherit;
+        opacity: 0.9;
+    }
+    
+    .message small {
+        display: block;
+        font-size: 11px;
+        margin-top: 4px;
+        opacity: 0.7;
+        text-align: right;
+    }
+    
+    .message.own small {
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .message.other small {
+        color: #8e959f;
+    }
+    
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px;
+        background: white;
+        border-radius: 18px;
+        width: fit-content;
+        margin: 8px 0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .typing-indicator span {
+        width: 8px;
+        height: 8px;
+        background: #8e959f;
+        border-radius: 50%;
+        animation: typing 1.4s infinite;
+    }
+    
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    
+    @keyframes typing {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-8px); opacity: 1; }
+    }
+    
+    /* Скроллбар как в Telegram */
+    ::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #b8c0c9;
+        border-radius: 10px;
+    }
+    
+    /* Дата-разделитель */
+    .date-divider {
+        text-align: center;
+        margin: 16px 0 8px;
+        font-size: 12px;
+        color: #8e959f;
+        position: relative;
+    }
+    
+    .date-divider span {
+        background: #e7ebf0;
+        padding: 0 12px;
+    }
+    
+    .date-divider::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #d4d9e0;
+        z-index: 0;
+    }
+    
+    /* Аватарка в сообщении (для чужих) */
+    .message-row {
+        display: flex;
+        gap: 8px;
+        margin: 4px 0;
+    }
+    
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #3390ec;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    
+    @media (max-width: 450px) {
+        .container {
+            border-radius: 18px;
+        }
+        
+        .message {
+            max-width: 85%;
+        }
+        
+        .messages-area {
+            height: 400px;
+        }
+    }
+</style>
 <body>
     <div class="container">
         <h1>💬 ПАХАНТАЛК</h1>
