@@ -1,10 +1,21 @@
-# server.py - ПАХАНТАЛК (автовход, поиск, эмодзи, личные чаты)
-from flask import Flask, request, jsonify
+# server.py - ПАХАНТАЛК с картинками
+from flask import Flask, request, jsonify, send_file
 import sqlite3
 from datetime import datetime
 import os
+import uuid
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # База данных
 def init_db():
@@ -18,7 +29,8 @@ def init_db():
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   from_user TEXT NOT NULL,
                   to_user TEXT NOT NULL,
-                  text TEXT NOT NULL,
+                  text TEXT,
+                  image TEXT,
                   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     try:
         c.execute("INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)",
@@ -361,6 +373,13 @@ HTML = """<!DOCTYPE html>
             border-bottom-left-radius: 6px;
         }
 
+        .message img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+
         .message .status {
             display: inline-flex;
             align-items: center;
@@ -538,6 +557,10 @@ HTML = """<!DOCTYPE html>
         .search-result-item:hover {
             background: #3a3a3a;
         }
+
+        #file-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -582,10 +605,11 @@ HTML = """<!DOCTYPE html>
             </div>
 
             <div class="input-area" id="inputArea" style="display: none;">
-                <span class="attach-icon" onclick="alert('Прикрепление файлов пока не работает')">📎</span>
+                <span class="attach-icon" onclick="document.getElementById('file-input').click()">📎</span>
                 <span class="emoji-icon" onclick="toggleEmojiPicker()">😊</span>
                 <input type="text" id="messageInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
+                <input type="file" id="file-input" accept="image/*" onchange="uploadImage()" style="display: none;">
             </div>
 
             <div id="loginScreen" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px;">
@@ -702,6 +726,35 @@ HTML = """<!DOCTYPE html>
             }
         }
 
+        async function uploadImage() {
+            const fileInput = document.getElementById('file-input');
+            if (!fileInput.files.length) return;
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('from', currentUser);
+            formData.append('to', currentChat);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    loadMessages();
+                    loadChats();
+                } else {
+                    alert('Ошибка загрузки');
+                }
+            } catch(e) {
+                console.error('Upload error:', e);
+                alert('Ошибка');
+            }
+            fileInput.value = '';
+        }
+
         async function loadMessages() {
             if (!currentUser || !currentChat) return;
             try {
@@ -710,9 +763,15 @@ HTML = """<!DOCTYPE html>
                 const area = document.getElementById('messagesArea');
                 area.innerHTML = messages.reverse().map(msg => {
                     const isOwn = msg.from === currentUser;
+                    let content = '';
+                    if (msg.text) {
+                        content = msg.text;
+                    } else if (msg.image) {
+                        content = `<img src="${msg.image}" onclick="window.open(this.src)" style="max-width: 200px; max-height: 200px;">`;
+                    }
                     return `<div class="message ${isOwn ? 'own' : 'other'}">
                         ${!isOwn ? '<strong>' + msg.from + '</strong>' : ''}
-                        ${msg.text}
+                        ${content}
                         <small>${msg.time || ''}</small>
                         ${isOwn ? '<span class="status"></span>' : ''}
                     </div>`;
@@ -798,7 +857,6 @@ HTML = """<!DOCTYPE html>
             toggleEmojiPicker();
         }
 
-        // Автовход
         if (currentUser) {
             (async () => {
                 const result = await apiCall('/login', {username: currentUser, password: ''});
@@ -865,26 +923,67 @@ def send():
     conn.close()
     return jsonify({'success': True})
 
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'error': 'No file'})
+    
+    file = request.files['image']
+    from_user = request.form.get('from')
+    to_user = request.form.get('to')
+    
+    if not from_user or not to_user:
+        return jsonify({'success': False, 'error': 'Missing user'})
+    
+    if file and allowed_file(file.filename):
+        filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        image_url = '/uploads/' + filename
+        
+        conn = sqlite3.connect('pahantalk.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO messages (from_user, to_user, image) VALUES (?, ?, ?)",
+                  (from_user, to_user, image_url))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'url': image_url})
+    
+    return jsonify({'success': False, 'error': 'Invalid file'})
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_file(os.path.join(UPLOAD_FOLDER, filename))
+
 @app.route('/messages/<username>')
 def get_messages(username):
     with_user = request.args.get('with', '')
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
     if with_user:
-        c.execute("""SELECT from_user, to_user, text, 
+        c.execute("""SELECT from_user, to_user, text, image,
                      strftime('%H:%M', timestamp) as time 
                      FROM messages 
                      WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
                      ORDER BY timestamp DESC LIMIT 50""",
                   (username, with_user, with_user, username))
     else:
-        c.execute("""SELECT from_user, to_user, text, 
+        c.execute("""SELECT from_user, to_user, text, image,
                      strftime('%H:%M', timestamp) as time 
                      FROM messages 
                      WHERE from_user=? OR to_user=?
                      ORDER BY timestamp DESC LIMIT 50""",
                   (username, username))
-    msgs = [{'from': row[0], 'to': row[1], 'text': row[2], 'time': row[3]} for row in c.fetchall()]
+    msgs = []
+    for row in c.fetchall():
+        msg = {'from': row[0], 'to': row[1], 'time': row[4]}
+        if row[2]:
+            msg['text'] = row[2]
+        if row[3]:
+            msg['image'] = row[3]
+        msgs.append(msg)
     conn.close()
     return jsonify(msgs)
 
@@ -894,12 +993,12 @@ def get_chats(username):
     c = conn.cursor()
     c.execute("""SELECT DISTINCT 
                     CASE WHEN from_user=? THEN to_user ELSE from_user END as chat_user,
-                    (SELECT text FROM messages WHERE (from_user=? AND to_user=chat_user) OR (from_user=chat_user AND to_user=?) ORDER BY timestamp DESC LIMIT 1) as last_msg,
+                    (SELECT COALESCE(text, image) FROM messages WHERE (from_user=? AND to_user=chat_user) OR (from_user=chat_user AND to_user=?) ORDER BY timestamp DESC LIMIT 1) as last_msg,
                     (SELECT strftime('%H:%M', timestamp) FROM messages WHERE (from_user=? AND to_user=chat_user) OR (from_user=chat_user AND to_user=?) ORDER BY timestamp DESC LIMIT 1) as last_time
                  FROM messages 
                  WHERE from_user=? OR to_user=?""",
               (username, username, username, username, username, username, username))
-    chats = [{'username': row[0], 'last_msg': row[1], 'last_time': row[2]} for row in c.fetchall() if row[0]]
+    chats = [{'username': row[0], 'last_msg': row[1] if row[1] else '🖼️ Фото', 'last_time': row[2]} for row in c.fetchall() if row[0]]
     conn.close()
     return jsonify(chats)
 
