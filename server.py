@@ -327,14 +327,34 @@ HTML = '''
             document.getElementById('chatScreen').classList.add('hidden');
         }
 
-        async function loadProfile() {
-            const res = await fetch('/user/' + currentUser);
-            const user = await res.json();
+       async function loadProfile() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch('/user/' + currentUser);
+        if (!res.ok) {
+            console.error('Ошибка сервера');
+            return;
+        }
+        const user = await res.json();
+        if (user && user.username) {
             document.getElementById('myName').innerText = user.display_name || currentUser;
             document.getElementById('myStatus').innerText = user.status || '';
             const avatar = document.getElementById('myAvatar');
-            avatar.innerHTML = user.avatar ? `<img src="${user.avatar}">` : (currentUser[0] || '').toUpperCase();
+            if (user.avatar) {
+                avatar.innerHTML = `<img src="${user.avatar}">`;
+            } else {
+                avatar.innerText = (currentUser[0] || '').toUpperCase();
+            }
+        } else {
+            // Если профиля нет — создаём заглушку
+            document.getElementById('myName').innerText = currentUser;
+            document.getElementById('myStatus').innerText = '';
+            document.getElementById('myAvatar').innerText = (currentUser[0] || '').toUpperCase();
         }
+    } catch (e) {
+        console.error('Ошибка загрузки профиля:', e);
+    }
+} 
 
         async function loadChats() {
             const res = await fetch('/chats/' + currentUser);
