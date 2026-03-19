@@ -5,8 +5,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return '<h1>ПАХАНТАЛК ЖИВ!</h1><p>Сервер работает.</p>'
+    return '<h1>ПАХАНТАЛК</h1><p>Сервер работает на порту 10000</p>'
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+    # Жёстко фиксируем порт
+    app.run(host='0.0.0.0', port=10000, debug=False)
