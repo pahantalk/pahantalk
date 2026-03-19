@@ -36,7 +36,7 @@ init_db()
 HTML = '''<!DOCTYPE html>
 <html>
 <head>
-    <title>ПАХАНТАЛК</title>
+    <title>ПАХАНТАЛК — Telegram Style</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -58,6 +58,13 @@ HTML = '''<!DOCTYPE html>
             background: #17212b;
             border-radius: 12px;
             overflow: hidden;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 1;
+        }
+        .tg-container.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
         }
         .left-panel {
             width: 70px;
@@ -77,6 +84,7 @@ HTML = '''<!DOCTYPE html>
             width: 48px; height: 48px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             color: #7f91a4; font-size: 24px; margin: 8px 0; cursor: pointer;
+            transition: background 0.2s;
         }
         .nav-icon:hover { background: #253441; color:white; }
         .nav-icon.active { background: #2b7ad0; color:white; }
@@ -97,6 +105,7 @@ HTML = '''<!DOCTYPE html>
         .chat-item {
             display: flex; align-items: center; padding: 12px 16px;
             cursor: pointer; border-bottom: 1px solid #1e2a36;
+            transition: background 0.2s;
         }
         .chat-item:hover { background: #1e2a36; }
         .chat-item.active { background: #2b5278; }
@@ -142,15 +151,29 @@ HTML = '''<!DOCTYPE html>
         .send-btn {
             width:44px; height:44px; border-radius:50%; background:#2b7ad0;
             border:none; color:white; font-size:20px; cursor:pointer;
+            transition: transform 0.1s;
         }
+        .send-btn:active { transform: scale(0.9); }
         .modal {
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.9);
             display:flex; justify-content:center; align-items:center;
+            transition: opacity 0.3s ease;
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
         .modal-content {
             background:#17212b; padding:30px; border-radius:16px;
             width:90%; max-width:400px;
+            transform: scale(1);
+            transition: transform 0.3s ease;
+        }
+        .modal.hidden .modal-content {
+            transform: scale(0.9);
         }
         .modal-content h2 { color:white; margin-bottom:20px; text-align:center; }
         .modal-content input {
@@ -165,7 +188,6 @@ HTML = '''<!DOCTYPE html>
         }
         .btn-primary { background:#2b7ad0; color:white; }
         .btn-secondary { background:#1e2a36; color:white; }
-        .hidden { display:none; }
         .logout-btn {
             background:#d32f2f; color:white; border:none; padding:8px 15px;
             border-radius:8px; cursor:pointer;
