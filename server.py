@@ -36,7 +36,7 @@ init_db()
 HTML = '''<!DOCTYPE html>
 <html>
 <head>
-    <title>ПАХАНТАЛК — Telegram</title>
+    <title>ПАХАНТАЛК</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -68,99 +68,56 @@ HTML = '''<!DOCTYPE html>
             padding: 20px 0;
         }
         .avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #2b7ad0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 20px;
-            margin-bottom: 30px;
+            width: 48px; height: 48px; border-radius: 50%; background: #2b7ad0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 20px; margin-bottom: 30px;
             cursor: pointer;
         }
         .nav-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #7f91a4;
-            font-size: 24px;
-            margin: 8px 0;
-            cursor: pointer;
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: #7f91a4; font-size: 24px; margin: 8px 0; cursor: pointer;
         }
         .nav-icon:hover { background: #253441; color:white; }
         .nav-icon.active { background: #2b7ad0; color:white; }
         .chats-panel {
-            width: 320px;
-            background: #17212b;
-            display: flex;
-            flex-direction: column;
+            width: 320px; background: #17212b;
+            display: flex; flex-direction: column;
             border-right: 1px solid #253441;
         }
         .chats-header {
-            padding: 16px;
-            border-bottom: 1px solid #253441;
+            padding: 16px; border-bottom: 1px solid #253441;
         }
         .chats-header h2 { color:white; font-size:20px; font-weight:500; margin-bottom:12px; }
         .search-box {
-            background: #1e2a36;
-            border: 1px solid #253441;
-            border-radius: 8px;
-            padding: 10px 12px;
-            color: white;
-            width: 100%;
-            font-size: 14px;
-            outline: none;
+            background: #1e2a36; border: 1px solid #253441; border-radius: 8px;
+            padding: 10px 12px; color: white; width: 100%; font-size: 14px; outline: none;
         }
         .chats-list { flex:1; overflow-y:auto; }
         .chat-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid #1e2a36;
+            display: flex; align-items: center; padding: 12px 16px;
+            cursor: pointer; border-bottom: 1px solid #1e2a36;
         }
         .chat-item:hover { background: #1e2a36; }
         .chat-item.active { background: #2b5278; }
         .chat-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #2b7ad0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-right: 12px;
+            width: 48px; height: 48px; border-radius: 50%; background: #2b7ad0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; margin-right: 12px;
         }
         .chat-info { flex:1; min-width:0; }
         .chat-name { color:white; font-weight:500; margin-bottom:4px; }
         .chat-last { color:#7f91a4; font-size:13px; }
         .dialog-panel { flex:1; display:flex; flex-direction:column; }
         .dialog-header {
-            padding: 15px;
-            background: #1e2a36;
-            border-bottom: 1px solid #253441;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            padding: 15px; background: #1e2a36; border-bottom: 1px solid #253441;
+            display: flex; align-items: center; justify-content: space-between;
         }
         .dialog-info { display:flex; align-items:center; }
         .dialog-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #2b7ad0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            margin-right: 12px;
+            width: 40px; height: 40px; border-radius: 50%; background: #2b7ad0;
+            display: flex; align-items: center; justify-content: center;
+            color: white; margin-right: 12px;
         }
         .dialog-name { color:white; font-weight:600; }
         .dialog-status { font-size:12px; color:#4CAF50; }
@@ -200,6 +157,21 @@ HTML = '''<!DOCTYPE html>
             background:#d32f2f; color:white; border:none; padding:8px 15px;
             border-radius:8px; cursor:pointer;
         }
+        .mobile-back {
+            display: none;
+            background: none; border: none; color: white; font-size: 24px;
+            cursor: pointer; margin-right: 10px;
+        }
+        @media (max-width: 768px) {
+            .left-panel { width: 60px; }
+            .chats-panel { width: 280px; }
+        }
+        @media (max-width: 480px) {
+            .left-panel { display: none; }
+            .chats-panel { width: 100%; display: flex; }
+            .dialog-panel { display: none; width: 100%; }
+            .mobile-back { display: inline-block; }
+        }
     </style>
 </head>
 <body>
@@ -211,15 +183,16 @@ HTML = '''<!DOCTYPE html>
             <div class="nav-icon">📞</div>
             <div class="nav-icon">⚙️</div>
         </div>
-        <div class="chats-panel">
+        <div class="chats-panel" id="chatsPanel">
             <div class="chats-header">
                 <h2>Чаты</h2>
                 <input class="search-box" id="searchInput" placeholder="Поиск">
             </div>
             <div class="chats-list" id="chatsList"></div>
         </div>
-        <div class="dialog-panel">
+        <div class="dialog-panel" id="dialogPanel">
             <div class="dialog-header">
+                <button class="mobile-back" id="backBtn" onclick="goBack()">←</button>
                 <div class="dialog-info">
                     <div class="dialog-avatar" id="dialogAvatar">?</div>
                     <div>
@@ -250,9 +223,7 @@ HTML = '''<!DOCTYPE html>
         let currentChat = null;
 
         async function apiCall(url, data) {
-            const res = await fetch(url, {
-                method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)
-            });
+            const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
             return res.json();
         }
 
@@ -302,11 +273,20 @@ HTML = '''<!DOCTYPE html>
             }
         }
 
+        function goBack() {
+            document.getElementById('chatsPanel').style.display = 'flex';
+            document.getElementById('dialogPanel').style.display = 'none';
+        }
+
         async function selectChat(username) {
             currentChat = username;
             document.getElementById('dialogName').innerText = username;
             document.getElementById('dialogStatus').innerText = 'в сети';
             document.getElementById('dialogAvatar').innerText = username[0];
+            if(window.innerWidth <= 480) {
+                document.getElementById('chatsPanel').style.display = 'none';
+                document.getElementById('dialogPanel').style.display = 'flex';
+            }
             loadMessages();
         }
 
