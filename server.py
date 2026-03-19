@@ -36,454 +36,7 @@ init_db()
 HTML = """<!DOCTYPE html>
 <html>
 <head>
-    <title>ПАХАНТАЛК</title>
-    <meta charset="utf-8">
-</head> <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background: #e7ebf0;
-        min-height: 100vh;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 12px;
-    }
-    
-    .container {
-        width: 100%;
-        max-width: 450px;
-        background: white;
-        border-radius: 24px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        animation: fadeIn 0.3s ease;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.95); }
-        to { opacity: 1; transform: scale(1); }
-    }
-    
-    h1 {
-        font-size: 24px;
-        font-weight: 600;
-        text-align: center;
-        padding: 20px 16px 12px;
-        color: #222;
-        border-bottom: 1px solid #e9ecef;
-        margin: 0;
-    }
-    
-    .login-section, .chat-section {
-        padding: 16px;
-    }
-    
-    .input-group {
-        margin-bottom: 12px;
-    }
-    
-    input, button {
-        width: 100%;
-        padding: 14px 16px;
-        border: none;
-        border-radius: 14px;
-        font-size: 16px;
-        outline: none;
-        transition: all 0.2s;
-    }
-    
-    input {
-        background: #f4f6f9;
-        border: 1px solid #e9ecef;
-    }
-    
-    input:focus {
-        border-color: #3390ec;
-        background: white;
-    }
-    
-    button {
-        background: #3390ec;
-        color: white;
-        font-weight: 500;
-        cursor: pointer;
-        margin-top: 8px;
-    }
-    
-    button:hover {
-        background: #2a7ad0;
-    }
-    
-    button.secondary {
-        background: #f4f6f9;
-        color: #222;
-        border: 1px solid #e9ecef;
-    }
-    
-    button.secondary:hover {
-        background: #e9ecef;
-    }
-    
-    .chat-header {
-        background: white;
-        padding: 12px 16px;
-        border-bottom: 1px solid #e9ecef;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    
-    .avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #3390ec;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 18px;
-    }
-    
-    .username {
-        font-weight: 600;
-        color: #222;
-    }
-    
-    .logout-btn {
-        background: #f4f6f9;
-        color: #222;
-        padding: 8px 16px;
-        border-radius: 30px;
-        font-size: 14px;
-        border: 1px solid #e9ecef;
-        width: auto;
-    }
-    
-    .logout-btn:hover {
-        background: #e9ecef;
-    }
-    
-    .compose-area {
-        padding: 12px 16px;
-        background: white;
-        border-top: 1px solid #e9ecef;
-    }
-    
-    .to-input {
-        width: 100%;
-        padding: 10px 12px;
-        background: #f4f6f9;
-        border-radius: 20px;
-        border: 1px solid #e9ecef;
-        margin-bottom: 8px;
-        font-size: 14px;
-    }
-    
-    .message-input-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        background: #f4f6f9;
-        border-radius: 25px;
-        padding: 4px;
-        border: 1px solid #e9ecef;
-    }
-    
-    .message-input-row input {
-        flex: 1;
-        background: transparent;
-        border: none;
-        padding: 10px 12px;
-    }
-    
-    .message-input-row button {
-        width: auto;
-        padding: 10px 20px;
-        border-radius: 25px;
-        margin: 0;
-        background: #3390ec;
-    }
-    
-    .messages-area {
-        height: 450px;
-        overflow-y: auto;
-        padding: 16px;
-        background: #e7ebf0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .message {
-        max-width: 80%;
-        padding: 10px 14px;
-        border-radius: 18px;
-        word-wrap: break-word;
-        animation: messagePop 0.2s ease;
-        position: relative;
-        font-size: 15px;
-        line-height: 1.4;
-    }
-    
-    @keyframes messagePop {
-        from {
-            opacity: 0;
-            transform: scale(0.9);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-    
-    .message.own {
-        background: #3390ec;
-        color: white;
-        align-self: flex-end;
-        border-bottom-right-radius: 4px;
-    }
-    
-    .message.other {
-        background: white;
-        color: #222;
-        align-self: flex-start;
-        border-bottom-left-radius: 4px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    
-    .message strong {
-        display: block;
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: inherit;
-        opacity: 0.9;
-    }
-    
-    .message small {
-        display: block;
-        font-size: 11px;
-        margin-top: 4px;
-        opacity: 0.7;
-        text-align: right;
-    }
-    
-    .message.own small {
-        color: rgba(255,255,255,0.8);
-    }
-    
-    .message.other small {
-        color: #8e959f;
-    }
-    
-    .typing-indicator {
-        display: flex;
-        gap: 4px;
-        padding: 12px 16px;
-        background: white;
-        border-radius: 18px;
-        width: fit-content;
-        margin: 8px 0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    
-    .typing-indicator span {
-        width: 8px;
-        height: 8px;
-        background: #8e959f;
-        border-radius: 50%;
-        animation: typing 1.4s infinite;
-    }
-    
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    
-    @keyframes typing {
-        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-        30% { transform: translateY(-8px); opacity: 1; }
-    }
-    
-    /* Скроллбар как в Telegram */
-    ::-webkit-scrollbar {
-        width: 5px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: #b8c0c9;
-        border-radius: 10px;
-    }
-    
-    /* Дата-разделитель */
-    .date-divider {
-        text-align: center;
-        margin: 16px 0 8px;
-        font-size: 12px;
-        color: #8e959f;
-        position: relative;
-    }
-    
-    .date-divider span {
-        background: #e7ebf0;
-        padding: 0 12px;
-    }
-    
-    .date-divider::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: #d4d9e0;
-        z-index: 0;
-    }
-    
-    /* Аватарка в сообщении (для чужих) */
-    .message-row {
-        display: flex;
-        gap: 8px;
-        margin: 4px 0;
-    }
-    
-    .message-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: #3390ec;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 16px;
-        flex-shrink: 0;
-    }
-    
-    @media (max-width: 450px) {
-        .container {
-            border-radius: 18px;
-        }
-        
-        .message {
-            max-width: 85%;
-        }
-        
-        .messages-area {
-            height: 400px;
-        }
-    }
-</style>
-<body>
-    <div class="container">
-        <h1>💬 ПАХАНТАЛК</h1>
-        
-        <div id="loginSection">
-            <input id="loginUser" placeholder="Логин" value="2kenta">
-            <input id="loginPass" type="password" placeholder="Пароль" value="123">
-            <button onclick="login()">Войти</button>
-            <button onclick="register()">Регистрация</button>
-        </div>
-        
-        <div id="appSection" style="display:none;">
-            <div style="display:flex; justify-content:space-between;">
-                <span id="userDisplay"></span>
-                <button onclick="logout()" style="width:auto;">Выйти</button>
-            </div>
-            <input id="toUser" placeholder="Кому" value="pahan">
-            <div style="display:flex;">
-                <input id="messageText" placeholder="Сообщение" style="flex:1;">
-                <button onclick="sendMessage()" style="width:auto;">➡️</button>
-            </div>
-            <div id="messages"></div>
-        </div>
-    </div>
-    
-    <script>
-        let currentUser = null;
-        
-        async function apiCall(url, data) {
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                return await res.json();
-            } catch(e) {
-                alert('Ошибка: ' + e);
-                return null;
-            }
-        }
-        
-        async function register() {
-            const username = document.getElementById('loginUser').value;
-            const password = document.getElementById('loginPass').value;
-            const result = await apiCall('/register', {username, password});
-            alert(result?.success ? 'Рега успешна!' : 'Ошибка');
-        }
-        
-        async function login() {
-            const username = document.getElementById('loginUser').value;
-            const password = document.getElementById('loginPass').value;
-            const result = await apiCall('/login', {username, password});
-            if (result?.success) {
-                currentUser = username;
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('appSection').style.display = 'block';
-                document.getElementById('userDisplay').innerText = username;
-                loadMessages();
-            } else {
-                alert('Неверный логин/пароль');
-            }
-        }
-        
-        function logout() {
-            currentUser = null;
-            document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('appSection').style.display = 'none';
-        }
-        
-        async function sendMessage() {
-            if (!currentUser) return;
-            const to = document.getElementById('toUser').value;
-            const text = document.getElementById('messageText').value;
-            if (!text.trim()) return;
-            
-            await apiCall('/send', {from: currentUser, to, text});
-            document.getElementById('messageText').value = '';
-            loadMessages();
-        }
-        
-        async function loadMessages() {
-            if (!currentUser) return;
-            const res = await fetch('/messages/' + currentUser);
-            const messages = await res.json();
-            const html = messages.reverse().map(m => 
-                `<div class="msg"><b>${m.from}</b> → ${m.to}: ${m.text}</div>`
-            ).join('');
-            document.getElementById('messages').innerHTML = html;
-        }
-        
-        setInterval(() => { if (currentUser) loadMessages(); }, 3000);
-    </script>
+
 </body>
 </html>"""
 
@@ -498,7 +51,588 @@ def register():
     c = conn.cursor()
     try:
         c.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                  (data['username'], data['password']))
+   HTML = """<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПАХАНТАЛК — Telegram Style</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 16px;
+        }
+
+        /* Основной контейнер — три колонки */
+        .tg-container {
+            display: flex;
+            width: 1400px;
+            max-width: 100%;
+            height: 90vh;
+            background: #1f1f1f;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ========== Левая панель (узкая) ========== */
+        .left-panel {
+            width: 72px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            border-right: 1px solid #2f2f2f;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2a7ad0, #4e9bef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .avatar:hover {
+            border-color: #4e9bef;
+            transform: scale(1.02);
+        }
+
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8e959f;
+            font-size: 24px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-icon:hover {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+
+        .nav-icon.active {
+            background: #2b5278;
+            color: #ffffff;
+        }
+
+        /* ========== Центральная колонка (список чатов) ========== */
+        .chats-panel {
+            width: 320px;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #2f2f2f;
+        }
+
+        .chats-header {
+            padding: 16px;
+            border-bottom: 1px solid #2f2f2f;
+        }
+
+        .chats-header h2 {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .search-box {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 24px;
+            padding: 10px 16px;
+            color: #ffffff;
+            width: 100%;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .search-box::placeholder {
+            color: #6b6f77;
+        }
+
+        .search-box:focus {
+            border-color: #2a7ad0;
+            background: #2f2f2f;
+        }
+
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .chat-item:hover {
+            background: #2a2a2a;
+        }
+
+        .chat-item.active {
+            background: #2b5278;
+        }
+
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2a7ad0, #4e9bef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-time {
+            color: #8e959f;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .chat-last-msg {
+            color: #8e959f;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ========== Правая колонка (открытый диалог) ========== */
+        .dialog-panel {
+            flex: 1;
+            background: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #2f2f2f;
+            background: #1f1f1f;
+        }
+
+        .dialog-header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .dialog-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2a7ad0, #4e9bef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 14px;
+            font-size: 18px;
+        }
+
+        .dialog-info {
+            line-height: 1.3;
+        }
+
+        .dialog-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .dialog-status {
+            color: #4CAF50;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+        }
+
+        .dialog-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 6px;
+            display: inline-block;
+        }
+
+        .dialog-header-icons {
+            display: flex;
+            gap: 16px;
+            color: #8e959f;
+            font-size: 22px;
+        }
+
+        .dialog-header-icons span {
+            cursor: pointer;
+            transition: 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .dialog-header-icons span:hover {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #1a1a1a;
+        }
+
+        /* Сообщения */
+        .message {
+            max-width: 65%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.own {
+            background: #2b5278;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.other {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 12px;
+            margin-left: 8px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .message.own .status::after {
+            content: '✓✓';
+            letter-spacing: -2px;
+            font-size: 13px;
+            margin-left: 4px;
+        }
+
+        .message small {
+            display: block;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Поле ввода */
+        .input-area {
+            padding: 12px 20px;
+            background: #1f1f1f;
+            border-top: 1px solid #2f2f2f;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .attach-icon, .emoji-icon {
+            color: #8e959f;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .attach-icon:hover, .emoji-icon:hover {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+
+        .input-area input {
+            flex: 1;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 24px;
+            padding: 12px 16px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .input-area input:focus {
+            border-color: #2a7ad0;
+            background: #2f2f2f;
+        }
+
+        .input-area input::placeholder {
+            color: #6b6f77;
+        }
+
+        .send-btn {
+            background: #2a7ad0;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .send-btn:hover {
+            background: #1f6abc;
+            transform: scale(1.05);
+        }
+
+        /* Скроллбары */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a4a4a;
+        }
+
+        /* Адаптация под мобилки */
+        @media (max-width: 900px) {
+            .left-panel { width: 60px; }
+            .chats-panel { width: 280px; }
+        }
+
+        @media (max-width: 700px) {
+            .chats-panel { display: none; }
+            .left-panel { width: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="tg-container">
+        <!-- Левая панель -->
+        <div class="left-panel">
+            <div class="avatar">2K</div>
+            <div class="nav-icon active">💬</div>
+            <div class="nav-icon">👥</div>
+            <div class="nav-icon">📞</div>
+            <div class="nav-icon">⚙️</div>
+        </div>
+
+        <!-- Центр: список чатов -->
+        <div class="chats-panel">
+            <div class="chats-header">
+                <h2>Чаты</h2>
+                <input class="search-box" type="text" placeholder="Поиск">
+            </div>
+            <div class="chats-list">
+                <div class="chat-item active">
+                    <div class="chat-avatar">П</div>
+                    <div class="chat-info">
+                        <div class="chat-row">
+                            <span class="chat-name">Пахан</span>
+                            <span class="chat-time">12:45</span>
+                        </div>
+                        <div class="chat-last-msg">Привет, бро 🔥</div>
+                    </div>
+                </div>
+                <div class="chat-item">
+                    <div class="chat-avatar">А</div>
+                    <div class="chat-info">
+                        <div class="chat-row">
+                            <span class="chat-name">Артур</span>
+                            <span class="chat-time">11:20</span>
+                        </div>
+                        <div class="chat-last-msg">Го завтра встретимся?</div>
+                    </div>
+                </div>
+                <div class="chat-item">
+                    <div class="chat-avatar">С</div>
+                    <div class="chat-info">
+                        <div class="chat-row">
+                            <span class="chat-name">Саня</span>
+                            <span class="chat-time">10:05</span>
+                        </div>
+                        <div class="chat-last-msg">Код залил, глянь</div>
+                    </div>
+                </div>
+                <div class="chat-item">
+                    <div class="chat-avatar">Т</div>
+                    <div class="chat-info">
+                        <div class="chat-row">
+                            <span class="chat-name">Тимур</span>
+                            <span class="chat-time">09:30</span>
+                        </div>
+                        <div class="chat-last-msg">Там че по серверу?</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка: открытый диалог -->
+        <div class="dialog-panel">
+            <!-- Шапка диалога -->
+            <div class="dialog-header">
+                <div class="dialog-header-left">
+                    <div class="dialog-avatar">П</div>
+                    <div class="dialog-info">
+                        <div class="dialog-name">Пахан</div>
+                        <div class="dialog-status">в сети</div>
+                    </div>
+                </div>
+                <div class="dialog-header-icons">
+                    <span>🔍</span>
+                    <span>⋮</span>
+                </div>
+            </div>
+
+            <!-- Сообщения -->
+            <div class="messages-area">
+                <div class="message other">
+                    <strong>Пахан</strong>
+                    Привет, бро! Как дела?
+                    <small>12:30</small>
+                </div>
+                <div class="message own">
+                    Здарова, норм! А ты?
+                    <span class="status"></span>
+                    <small>12:32</small>
+                </div>
+                <div class="message other">
+                    Тоже норм, че делаешь?
+                    <small>12:33</small>
+                </div>
+                <div class="message own">
+                    Да код пилю, ПАХАНТАЛК делаю
+                    <span class="status"></span>
+                    <small>12:34</small>
+                </div>
+                <div class="message other">
+                    Красавчик, скинь потом ссылку
+                    <small>12:35</small>
+                </div>
+                <div class="message own">
+                    Обижаешь, брат. Ща скину
+                    <span class="status"></span>
+                    <small>12:36</small>
+                </div>
+            </div>
+
+            <!-- Поле ввода -->
+            <div class="input-area">
+                <span class="attach-icon">📎</span>
+                <span class="emoji-icon">😊</span>
+                <input type="text" placeholder="Написать сообщение...">
+                <button class="send-btn">➤</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""               (data['username'], data['password']))
         conn.commit()
         return jsonify({'success': True})
     except:
