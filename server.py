@@ -1,4 +1,4 @@
-# server.py - ПАХАНТАЛК для Render (ПОЛНОСТЬЮ РАБОЧИЙ)
+# server.py - ПАХАНТАЛК (автовход, поиск, эмодзи, личные чаты)
 from flask import Flask, request, jsonify
 import sqlite3
 from datetime import datetime
@@ -32,7 +32,6 @@ def init_db():
 
 init_db()
 
-# HTML интерфейс (Telegram-дизайн + работающий JavaScript)
 HTML = """<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -57,7 +56,6 @@ HTML = """<!DOCTYPE html>
             padding: 16px;
         }
 
-        /* Основной контейнер — три колонки */
         .tg-container {
             display: flex;
             width: 1400px;
@@ -69,7 +67,6 @@ HTML = """<!DOCTYPE html>
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
         }
 
-        /* ========== Левая панель (узкая) ========== */
         .left-panel {
             width: 72px;
             background: #1a1a1a;
@@ -126,7 +123,6 @@ HTML = """<!DOCTYPE html>
             color: #ffffff;
         }
 
-        /* ========== Центральная колонка (список чатов) ========== */
         .chats-panel {
             width: 320px;
             background: #1a1a1a;
@@ -157,10 +153,6 @@ HTML = """<!DOCTYPE html>
             font-size: 14px;
             outline: none;
             transition: 0.2s;
-        }
-
-        .search-box::placeholder {
-            color: #6b6f77;
         }
 
         .search-box:focus {
@@ -241,7 +233,6 @@ HTML = """<!DOCTYPE html>
             text-overflow: ellipsis;
         }
 
-        /* ========== Правая колонка (открытый диалог) ========== */
         .dialog-panel {
             flex: 1;
             background: #1a1a1a;
@@ -287,6 +278,7 @@ HTML = """<!DOCTYPE html>
             font-size: 16px;
             display: flex;
             align-items: center;
+            gap: 10px;
         }
 
         .dialog-status {
@@ -339,7 +331,6 @@ HTML = """<!DOCTYPE html>
             background: #1a1a1a;
         }
 
-        /* Сообщения */
         .message {
             max-width: 65%;
             padding: 10px 14px;
@@ -394,7 +385,6 @@ HTML = """<!DOCTYPE html>
             text-align: right;
         }
 
-        /* Поле ввода */
         .input-area {
             padding: 12px 20px;
             background: #1f1f1f;
@@ -463,7 +453,6 @@ HTML = """<!DOCTYPE html>
             transform: scale(1.05);
         }
 
-        /* Скроллбары */
         ::-webkit-scrollbar {
             width: 5px;
         }
@@ -477,11 +466,6 @@ HTML = """<!DOCTYPE html>
             border-radius: 10px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #4a4a4a;
-        }
-
-        /* Адаптация под мобилки */
         @media (max-width: 900px) {
             .left-panel { width: 60px; }
             .chats-panel { width: 280px; }
@@ -491,11 +475,73 @@ HTML = """<!DOCTYPE html>
             .chats-panel { display: none; }
             .left-panel { width: 60px; }
         }
+
+        .logout-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #b71c1c;
+        }
+
+        .emoji-picker {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            background: #2a2a2a;
+            border-radius: 12px;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            border: 1px solid #3a3a3a;
+            z-index: 100;
+        }
+
+        .emoji-picker span {
+            font-size: 24px;
+            cursor: pointer;
+            text-align: center;
+            padding: 5px;
+            border-radius: 8px;
+        }
+
+        .emoji-picker span:hover {
+            background: #3a3a3a;
+        }
+
+        .search-results {
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin-top: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: calc(100% - 32px);
+            z-index: 10;
+        }
+
+        .search-result-item {
+            padding: 10px;
+            cursor: pointer;
+            color: white;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .search-result-item:hover {
+            background: #3a3a3a;
+        }
     </style>
 </head>
 <body>
     <div class="tg-container">
-        <!-- Левая панель -->
         <div class="left-panel">
             <div class="avatar" onclick="location.reload()">2K</div>
             <div class="nav-icon active">💬</div>
@@ -504,25 +550,24 @@ HTML = """<!DOCTYPE html>
             <div class="nav-icon">⚙️</div>
         </div>
 
-        <!-- Центр: список чатов -->
-        <div class="chats-panel" id="chatsPanel">
+        <div class="chats-panel">
             <div class="chats-header">
                 <h2>Чаты</h2>
-                <input class="search-box" type="text" placeholder="Поиск">
+                <input class="search-box" id="userSearch" type="text" placeholder="Поиск пользователей..." oninput="searchUsers()">
+                <div id="searchResults" class="search-results" style="display: none;"></div>
             </div>
-            <div class="chats-list" id="chatsList">
-                <!-- Чаты будут подгружаться сюда -->
-            </div>
+            <div class="chats-list" id="chatsList"></div>
         </div>
 
-        <!-- Правая колонка: открытый диалог -->
-        <div class="dialog-panel" id="dialogPanel">
-            <!-- Шапка диалога (будет заполняться JS) -->
+        <div class="dialog-panel">
             <div class="dialog-header" id="dialogHeader" style="display: none;">
                 <div class="dialog-header-left">
-                    <div class="dialog-avatar" id="dialogAvatar">П</div>
+                    <div class="dialog-avatar" id="dialogAvatar">?</div>
                     <div class="dialog-info">
-                        <div class="dialog-name" id="dialogName">Пахан</div>
+                        <div class="dialog-name">
+                            <span id="dialogName">Загрузка...</span>
+                            <button class="logout-btn" id="logoutBtn" onclick="logout()">Выйти</button>
+                        </div>
                         <div class="dialog-status" id="dialogStatus">в сети</div>
                     </div>
                 </div>
@@ -532,20 +577,17 @@ HTML = """<!DOCTYPE html>
                 </div>
             </div>
 
-            <!-- Сообщения -->
             <div class="messages-area" id="messagesArea">
-                <!-- Сообщения будут подгружаться сюда -->
+                <div style="color: #666; text-align: center; padding: 20px;">Выберите чат</div>
             </div>
 
-            <!-- Поле ввода (скрыто, пока не вошли) -->
             <div class="input-area" id="inputArea" style="display: none;">
-                <span class="attach-icon" onclick="alert('Прикрепить файл пока не работает')">📎</span>
-                <span class="emoji-icon" onclick="alert('Эмодзи пока не работают')">😊</span>
+                <span class="attach-icon" onclick="alert('Прикрепление файлов пока не работает')">📎</span>
+                <span class="emoji-icon" onclick="toggleEmojiPicker()">😊</span>
                 <input type="text" id="messageInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
             </div>
 
-            <!-- Экран входа (показывается, если не вошли) -->
             <div id="loginScreen" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px;">
                 <h2 style="color: white; margin-bottom: 20px;">Вход в ПАХАНТАЛК</h2>
                 <input type="text" id="loginUsername" placeholder="Логин" style="width: 80%; padding: 12px; margin: 8px; border-radius: 8px; border: none;">
@@ -559,9 +601,23 @@ HTML = """<!DOCTYPE html>
         </div>
     </div>
 
+    <div id="emojiPicker" class="emoji-picker" style="display: none;">
+        <span onclick="addEmoji('😊')">😊</span>
+        <span onclick="addEmoji('😂')">😂</span>
+        <span onclick="addEmoji('❤️')">❤️</span>
+        <span onclick="addEmoji('🔥')">🔥</span>
+        <span onclick="addEmoji('👍')">👍</span>
+        <span onclick="addEmoji('👎')">👎</span>
+        <span onclick="addEmoji('😢')">😢</span>
+        <span onclick="addEmoji('😍')">😍</span>
+        <span onclick="addEmoji('🎉')">🎉</span>
+        <span onclick="addEmoji('💀')">💀</span>
+    </div>
+
     <script>
-        let currentUser = null;
-        let currentChat = 'pahan';
+        let currentUser = localStorage.getItem('pahantalk_user');
+        let currentChat = null;
+        let allUsers = [];
 
         async function apiCall(url, data) {
             try {
@@ -602,13 +658,12 @@ HTML = """<!DOCTYPE html>
             const result = await apiCall('/login', {username, password});
             if (result && result.success) {
                 currentUser = username;
+                localStorage.setItem('pahantalk_user', username);
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('dialogHeader').style.display = 'flex';
                 document.getElementById('inputArea').style.display = 'flex';
-                document.getElementById('dialogName').innerText = 'Пахан';
-                document.getElementById('dialogAvatar').innerText = 'П';
-                loadMessages();
                 loadChats();
+                loadAllUsers();
             } else {
                 alert('Неверный логин или пароль');
             }
@@ -616,14 +671,20 @@ HTML = """<!DOCTYPE html>
 
         function logout() {
             currentUser = null;
+            currentChat = null;
+            localStorage.removeItem('pahantalk_user');
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('dialogHeader').style.display = 'none';
             document.getElementById('inputArea').style.display = 'none';
-            document.getElementById('messagesArea').innerHTML = '';
+            document.getElementById('messagesArea').innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Выберите чат</div>';
+            document.getElementById('chatsList').innerHTML = '';
         }
 
         async function sendMessage() {
-            if (!currentUser) return;
+            if (!currentUser || !currentChat) {
+                alert('Сначала выбери чат');
+                return;
+            }
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text) return;
@@ -637,13 +698,14 @@ HTML = """<!DOCTYPE html>
             if (result && result.success) {
                 input.value = '';
                 loadMessages();
+                loadChats();
             }
         }
 
         async function loadMessages() {
-            if (!currentUser) return;
+            if (!currentUser || !currentChat) return;
             try {
-                const response = await fetch('/messages/' + currentUser);
+                const response = await fetch('/messages/' + currentUser + '?with=' + currentChat);
                 const messages = await response.json();
                 const area = document.getElementById('messagesArea');
                 area.innerHTML = messages.reverse().map(msg => {
@@ -662,35 +724,99 @@ HTML = """<!DOCTYPE html>
         }
 
         async function loadChats() {
-            // Заглушка для списка чатов
-            const chatsList = document.getElementById('chatsList');
-            chatsList.innerHTML = `
-                <div class="chat-item active" onclick="currentChat='pahan'; loadMessages()">
-                    <div class="chat-avatar">П</div>
-                    <div class="chat-info">
-                        <div class="chat-row">
-                            <span class="chat-name">Пахан</span>
-                            <span class="chat-time">12:45</span>
+            if (!currentUser) return;
+            try {
+                const response = await fetch('/chats/' + currentUser);
+                const chats = await response.json();
+                const list = document.getElementById('chatsList');
+                list.innerHTML = chats.map(chat => `
+                    <div class="chat-item ${chat.username === currentChat ? 'active' : ''}" onclick="selectChat('${chat.username}')">
+                        <div class="chat-avatar">${chat.username[0].toUpperCase()}</div>
+                        <div class="chat-info">
+                            <div class="chat-row">
+                                <span class="chat-name">${chat.username}</span>
+                                <span class="chat-time">${chat.last_time || ''}</span>
+                            </div>
+                            <div class="chat-last-msg">${chat.last_msg || 'Нет сообщений'}</div>
                         </div>
-                        <div class="chat-last-msg">Привет, бро 🔥</div>
                     </div>
-                </div>
-                <div class="chat-item" onclick="currentChat='artur'; loadMessages()">
-                    <div class="chat-avatar">А</div>
-                    <div class="chat-info">
-                        <div class="chat-row">
-                            <span class="chat-name">Артур</span>
-                            <span class="chat-time">11:20</span>
-                        </div>
-                        <div class="chat-last-msg">Го завтра встретимся?</div>
-                    </div>
-                </div>
-            `;
+                `).join('');
+            } catch(e) {
+                console.error('Load chats error:', e);
+            }
         }
 
-        // Автообновление сообщений
+        async function loadAllUsers() {
+            try {
+                const response = await fetch('/users');
+                allUsers = await response.json();
+            } catch(e) {
+                console.error('Load users error:', e);
+            }
+        }
+
+        function searchUsers() {
+            const query = document.getElementById('userSearch').value.toLowerCase();
+            const resultsDiv = document.getElementById('searchResults');
+            if (!query || query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            const filtered = allUsers.filter(u => 
+                u.toLowerCase().includes(query) && u !== currentUser
+            ).slice(0, 5);
+            
+            if (filtered.length === 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            resultsDiv.innerHTML = filtered.map(u => 
+                `<div class="search-result-item" onclick="selectChat('${u}')">${u}</div>`
+            ).join('');
+            resultsDiv.style.display = 'block';
+        }
+
+        function selectChat(username) {
+            currentChat = username;
+            document.getElementById('dialogName').innerText = username;
+            document.getElementById('dialogAvatar').innerText = username[0].toUpperCase();
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('userSearch').value = '';
+            loadMessages();
+            loadChats();
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emojiPicker');
+            picker.style.display = picker.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        function addEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            input.value += emoji;
+            toggleEmojiPicker();
+        }
+
+        // Автовход
+        if (currentUser) {
+            (async () => {
+                const result = await apiCall('/login', {username: currentUser, password: ''});
+                if (result && result.success) {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('dialogHeader').style.display = 'flex';
+                    document.getElementById('inputArea').style.display = 'flex';
+                    loadChats();
+                    loadAllUsers();
+                } else {
+                    localStorage.removeItem('pahantalk_user');
+                }
+            })();
+        }
+
         setInterval(() => {
-            if (currentUser) loadMessages();
+            if (currentUser && currentChat) loadMessages();
+            if (currentUser) loadChats();
         }, 3000);
     </script>
 </body>
@@ -718,6 +844,8 @@ def register():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
+    if not data.get('password'):
+        return jsonify({'success': False})
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
     c.execute("SELECT * FROM users WHERE username=? AND password=?",
@@ -739,17 +867,50 @@ def send():
 
 @app.route('/messages/<username>')
 def get_messages(username):
+    with_user = request.args.get('with', '')
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
-    c.execute("""SELECT from_user, to_user, text, 
-                 strftime('%H:%M', timestamp) as time 
-                 FROM messages 
-                 WHERE from_user=? OR to_user=? OR to_user='all'
-                 ORDER BY timestamp DESC LIMIT 50""",
-              (username, username))
+    if with_user:
+        c.execute("""SELECT from_user, to_user, text, 
+                     strftime('%H:%M', timestamp) as time 
+                     FROM messages 
+                     WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
+                     ORDER BY timestamp DESC LIMIT 50""",
+                  (username, with_user, with_user, username))
+    else:
+        c.execute("""SELECT from_user, to_user, text, 
+                     strftime('%H:%M', timestamp) as time 
+                     FROM messages 
+                     WHERE from_user=? OR to_user=?
+                     ORDER BY timestamp DESC LIMIT 50""",
+                  (username, username))
     msgs = [{'from': row[0], 'to': row[1], 'text': row[2], 'time': row[3]} for row in c.fetchall()]
     conn.close()
     return jsonify(msgs)
+
+@app.route('/chats/<username>')
+def get_chats(username):
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("""SELECT DISTINCT 
+                    CASE WHEN from_user=? THEN to_user ELSE from_user END as chat_user,
+                    (SELECT text FROM messages WHERE (from_user=? AND to_user=chat_user) OR (from_user=chat_user AND to_user=?) ORDER BY timestamp DESC LIMIT 1) as last_msg,
+                    (SELECT strftime('%H:%M', timestamp) FROM messages WHERE (from_user=? AND to_user=chat_user) OR (from_user=chat_user AND to_user=?) ORDER BY timestamp DESC LIMIT 1) as last_time
+                 FROM messages 
+                 WHERE from_user=? OR to_user=?""",
+              (username, username, username, username, username, username, username))
+    chats = [{'username': row[0], 'last_msg': row[1], 'last_time': row[2]} for row in c.fetchall() if row[0]]
+    conn.close()
+    return jsonify(chats)
+
+@app.route('/users')
+def get_users():
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("SELECT username FROM users")
+    users = [row[0] for row in c.fetchall()]
+    conn.close()
+    return jsonify(users)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
