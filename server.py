@@ -58,13 +58,6 @@ HTML = '''<!DOCTYPE html>
             background: #17212b;
             border-radius: 12px;
             overflow: hidden;
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .tg-container.visible {
-            opacity: 1;
-            transform: scale(1);
         }
         .left-panel {
             width: 70px;
@@ -84,7 +77,6 @@ HTML = '''<!DOCTYPE html>
             width: 48px; height: 48px; border-radius: 12px;
             display: flex; align-items: center; justify-content: center;
             color: #7f91a4; font-size: 24px; margin: 8px 0; cursor: pointer;
-            transition: background 0.2s;
         }
         .nav-icon:hover { background: #253441; color:white; }
         .nav-icon.active { background: #2b7ad0; color:white; }
@@ -100,14 +92,11 @@ HTML = '''<!DOCTYPE html>
         .search-box {
             background: #1e2a36; border: 1px solid #253441; border-radius: 8px;
             padding: 10px 12px; color: white; width: 100%; font-size: 14px; outline: none;
-            transition: border 0.2s;
         }
-        .search-box:focus { border-color: #2b7ad0; }
         .chats-list { flex:1; overflow-y:auto; }
         .chat-item {
             display: flex; align-items: center; padding: 12px 16px;
             cursor: pointer; border-bottom: 1px solid #1e2a36;
-            transition: background 0.2s;
         }
         .chat-item:hover { background: #1e2a36; }
         .chat-item.active { background: #2b5278; }
@@ -139,12 +128,6 @@ HTML = '''<!DOCTYPE html>
         .message {
             max-width:70%; padding:10px 14px; border-radius:18px;
             font-size:14px; word-wrap:break-word;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: messageAppear 0.2s forwards;
-        }
-        @keyframes messageAppear {
-            to { opacity: 1; transform: translateY(0); }
         }
         .message.own { background:#2b5278; align-self:flex-end; }
         .message.other { background:#1e2a36; align-self:flex-start; }
@@ -155,62 +138,42 @@ HTML = '''<!DOCTYPE html>
         .input-area input {
             flex:1; background:#17212b; border:1px solid #253441;
             border-radius:24px; padding:12px; color:white; outline:none;
-            transition: border 0.2s;
         }
-        .input-area input:focus { border-color: #2b7ad0; }
         .send-btn {
             width:44px; height:44px; border-radius:50%; background:#2b7ad0;
             border:none; color:white; font-size:20px; cursor:pointer;
-            transition: transform 0.1s;
         }
-        .send-btn:active { transform: scale(0.9); }
         .modal {
             position:fixed; top:0; left:0; width:100%; height:100%;
             background:rgba(0,0,0,0.9);
             display:flex; justify-content:center; align-items:center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-        .modal.show {
-            opacity: 1;
-            pointer-events: all;
         }
         .modal-content {
             background:#17212b; padding:30px; border-radius:16px;
             width:90%; max-width:400px;
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-        }
-        .modal.show .modal-content {
-            transform: scale(1);
         }
         .modal-content h2 { color:white; margin-bottom:20px; text-align:center; }
         .modal-content input {
             width:100%; padding:12px; margin:10px 0;
             background:#1e2a36; border:1px solid #253441; border-radius:8px;
             color:white; outline:none;
-            transition: border 0.2s;
         }
-        .modal-content input:focus { border-color: #2b7ad0; }
         .modal-content button {
             width:100%; padding:12px; margin:5px 0;
             border:none; border-radius:8px; font-weight:600;
-            cursor:pointer; transition: opacity 0.2s;
+            cursor:pointer;
         }
-        .modal-content button:hover { opacity:0.9; }
         .btn-primary { background:#2b7ad0; color:white; }
         .btn-secondary { background:#1e2a36; color:white; }
         .hidden { display:none; }
         .logout-btn {
             background:#d32f2f; color:white; border:none; padding:8px 15px;
-            border-radius:8px; cursor:pointer; transition: opacity 0.2s;
+            border-radius:8px; cursor:pointer;
         }
-        .logout-btn:hover { opacity:0.9; }
     </style>
 </head>
 <body>
-    <div class="modal show" id="loginModal">
+    <div class="modal" id="loginModal">
         <div class="modal-content">
             <h2>🔐 Вход в ПАХАНТАЛК</h2>
             <input type="text" id="loginUser" placeholder="Логин" value="2kenta">
@@ -220,7 +183,7 @@ HTML = '''<!DOCTYPE html>
         </div>
     </div>
 
-    <div class="tg-container" id="mainContainer">
+    <div class="tg-container hidden" id="mainContainer">
         <div class="left-panel">
             <div class="avatar" id="myAvatar">2K</div>
             <div class="nav-icon active">💬</div>
@@ -277,8 +240,8 @@ HTML = '''<!DOCTYPE html>
             if(res.success) {
                 currentUser = u;
                 localStorage.setItem('pahantalk_user', u);
-                document.getElementById('loginModal').classList.remove('show');
-                document.getElementById('mainContainer').classList.add('visible');
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('mainContainer').classList.remove('hidden');
                 loadProfile();
                 loadChats();
             } else {
@@ -289,8 +252,8 @@ HTML = '''<!DOCTYPE html>
         function logout() {
             currentUser = null;
             localStorage.removeItem('pahantalk_user');
-            document.getElementById('mainContainer').classList.remove('visible');
-            document.getElementById('loginModal').classList.add('show');
+            document.getElementById('mainContainer').classList.add('hidden');
+            document.getElementById('loginModal').classList.remove('hidden');
         }
 
         async function loadProfile() {
@@ -348,15 +311,13 @@ HTML = '''<!DOCTYPE html>
             area.scrollTop = area.scrollHeight;
         }
 
-        // Автовход, если уже залогинен
         if(currentUser) {
-            document.getElementById('loginModal').classList.remove('show');
-            document.getElementById('mainContainer').classList.add('visible');
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('mainContainer').classList.remove('hidden');
             loadProfile();
             loadChats();
         }
 
-        // Автообновление сообщений
         setInterval(() => { if(currentChat) loadMessages(); }, 3000);
     </script>
 </body>
