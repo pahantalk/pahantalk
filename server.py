@@ -42,185 +42,108 @@ HTML = '''<!DOCTYPE html>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: Arial, sans-serif;
             background: #0e1621;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 10px;
+            color: white;
+            padding: 20px;
         }
-        .tg-container {
-            display: flex;
-            width: 1400px;
-            max-width: 100%;
-            height: 95vh;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
             background: #17212b;
             border-radius: 12px;
-            overflow: hidden;
+            padding: 20px;
         }
-        .left-panel {
-            width: 70px;
+        h1 { color: #2b7ad0; text-align: center; margin-bottom: 20px; }
+        .row { display: flex; gap: 20px; }
+        .col {
+            flex: 1;
             background: #1e2a36;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
         }
-        .avatar {
-            width: 48px; height: 48px; border-radius: 50%; background: #2b7ad0;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-weight: 600; font-size: 20px; margin-bottom: 30px;
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            background: #2b7ad0;
+            color: white;
             cursor: pointer;
         }
-        .nav-icon {
-            width: 48px; height: 48px; border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            color: #7f91a4; font-size: 24px; margin: 8px 0; cursor: pointer;
-        }
-        .nav-icon:hover { background: #253441; color:white; }
-        .nav-icon.active { background: #2b7ad0; color:white; }
-        .chats-panel {
-            width: 320px; background: #17212b;
-            display: flex; flex-direction: column;
-            border-right: 1px solid #253441;
-        }
-        .chats-header {
-            padding: 16px; border-bottom: 1px solid #253441;
-        }
-        .chats-header h2 { color:white; font-size:20px; font-weight:500; margin-bottom:12px; }
-        .search-box {
-            background: #1e2a36; border: 1px solid #253441; border-radius: 8px;
-            padding: 10px 12px; color: white; width: 100%; font-size: 14px; outline: none;
-        }
-        .chats-list { flex:1; overflow-y:auto; }
         .chat-item {
-            display: flex; align-items: center; padding: 12px 16px;
-            cursor: pointer; border-bottom: 1px solid #1e2a36;
+            padding: 10px;
+            border-bottom: 1px solid #253441;
+            cursor: pointer;
         }
-        .chat-item:hover { background: #1e2a36; }
-        .chat-item.active { background: #2b5278; }
-        .chat-avatar {
-            width: 48px; height: 48px; border-radius: 50%; background: #2b7ad0;
-            display: flex; align-items: center; justify-content: center;
-            color: white; margin-right: 12px;
-        }
-        .chat-info { flex:1; min-width:0; }
-        .chat-name { color:white; font-weight:500; margin-bottom:4px; }
-        .chat-last { color:#7f91a4; font-size:13px; }
-        .dialog-panel { flex:1; display:flex; flex-direction:column; }
-        .dialog-header {
-            padding: 15px; background: #1e2a36; border-bottom: 1px solid #253441;
-            display: flex; align-items: center; justify-content: space-between;
-        }
-        .dialog-info { display:flex; align-items:center; }
-        .dialog-avatar {
-            width: 40px; height: 40px; border-radius: 50%; background: #2b7ad0;
-            display: flex; align-items: center; justify-content: center;
-            color: white; margin-right: 12px;
-        }
-        .dialog-name { color:white; font-weight:600; }
-        .dialog-status { font-size:12px; color:#4CAF50; }
-        .messages-area {
-            flex:1; overflow-y:auto; padding:20px;
-            display:flex; flex-direction:column; gap:8px;
-        }
+        .chat-item:hover { background: #253441; }
         .message {
-            max-width:70%; padding:10px 14px; border-radius:18px;
-            font-size:14px; word-wrap:break-word;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 12px;
+            max-width: 70%;
         }
-        .message.own { background:#2b5278; align-self:flex-end; }
-        .message.other { background:#1e2a36; align-self:flex-start; }
-        .message small { display:block; font-size:10px; color:#7f91a4; margin-top:4px; }
-        .input-area {
-            padding:15px; background:#1e2a36; display:flex; gap:10px;
+        .my-message {
+            background: #2b5278;
+            margin-left: auto;
         }
-        .input-area input {
-            flex:1; background:#17212b; border:1px solid #253441;
-            border-radius:24px; padding:12px; color:white; outline:none;
+        .other-message {
+            background: #1e2a36;
         }
-        .send-btn {
-            width:44px; height:44px; border-radius:50%; background:#2b7ad0;
-            border:none; color:white; font-size:20px; cursor:pointer;
+        #messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #17212b;
+            border-radius: 8px;
         }
-        .modal {
-            position:fixed; top:0; left:0; width:100%; height:100%;
-            background:rgba(0,0,0,0.8); display:flex;
-            justify-content:center; align-items:center;
+        .hidden { display: none; }
+        .search-result {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #253441;
         }
-        .modal-content {
-            background:#17212b; padding:30px; border-radius:16px;
-            width:90%; max-width:400px;
-        }
-        .hidden { display:none; }
-        .logout-btn {
-            background:#d32f2f; color:white; border:none; padding:8px 15px;
-            border-radius:8px; cursor:pointer;
-        }
-        .mobile-back {
-            display: none;
-            background: none; border: none; color: white; font-size: 24px;
-            cursor: pointer; margin-right: 10px;
-        }
-        @media (max-width: 768px) {
-            .left-panel { width: 60px; }
-            .chats-panel { width: 280px; }
-        }
-        @media (max-width: 480px) {
-            .left-panel { display: none; }
-            .chats-panel { width: 100%; display: flex; }
-            .dialog-panel { display: none; width: 100%; }
-            .mobile-back { display: inline-block; }
-        }
+        .search-result:hover { background: #253441; }
     </style>
 </head>
 <body>
-    <div class="tg-container">
-        <div class="left-panel">
-            <div class="avatar" id="myAvatar">2K</div>
-            <div class="nav-icon active">💬</div>
-            <div class="nav-icon">👥</div>
-            <div class="nav-icon">📞</div>
-            <div class="nav-icon">⚙️</div>
+    <div class="container">
+        <h1>💬 ПАХАНТАЛК</h1>
+        <div id="loginScreen">
+            <input type="text" id="loginUser" placeholder="Логин" value="2kenta">
+            <input type="password" id="loginPass" placeholder="Пароль" value="123">
+            <button onclick="login()">Войти</button>
+            <button onclick="register()">Регистрация</button>
         </div>
-        <div class="chats-panel" id="chatsPanel">
-            <div class="chats-header">
-                <h2>Чаты</h2>
-                <input class="search-box" id="searchInput" placeholder="Поиск">
-            </div>
-            <div class="chats-list" id="chatsList"></div>
-        </div>
-        <div class="dialog-panel" id="dialogPanel">
-            <div class="dialog-header">
-                <button class="mobile-back" id="backBtn" onclick="goBack()">←</button>
-                <div class="dialog-info">
-                    <div class="dialog-avatar" id="dialogAvatar">?</div>
-                    <div>
-                        <div class="dialog-name" id="dialogName">Выберите чат</div>
-                        <div class="dialog-status" id="dialogStatus"></div>
+        <div id="chatScreen" class="hidden">
+            <div class="row">
+                <div class="col" style="max-width: 300px;">
+                    <h3>Чаты</h3>
+                    <input type="text" id="searchInput" placeholder="Поиск пользователей..." oninput="searchUsers()">
+                    <div id="searchResults"></div>
+                    <div id="chatsList"></div>
+                </div>
+                <div class="col">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3 id="currentChat">Выберите чат</h3>
+                        <button onclick="logout()">Выйти</button>
+                    </div>
+                    <div id="messages"></div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="messageInput" placeholder="Сообщение" style="flex: 1;">
+                        <button onclick="sendMessage()" style="width: auto;">➤</button>
                     </div>
                 </div>
-                <button class="logout-btn" onclick="logout()">Выйти</button>
             </div>
-            <div class="messages-area" id="messagesArea"></div>
-            <div class="input-area">
-                <input type="text" id="messageInput" placeholder="Сообщение">
-                <button class="send-btn" onclick="sendMessage()">➤</button>
-            </div>
-        </div>
-    </div>
-    <div id="loginScreen" class="modal">
-        <div class="modal-content">
-            <h2 style="color:white;">Вход</h2>
-            <input type="text" id="loginUser" placeholder="Логин" style="width:100%; padding:10px; margin:10px 0;">
-            <input type="password" id="loginPass" placeholder="Пароль" style="width:100%; padding:10px; margin:10px 0;">
-            <button onclick="login()" style="width:100%; padding:10px; background:#2b7ad0; color:white; border:none; border-radius:8px;">Войти</button>
-            <button onclick="register()" style="width:100%; padding:10px; margin-top:10px; background:#1e2a36; color:white; border:none; border-radius:8px;">Регистрация</button>
         </div>
     </div>
     <script>
         let currentUser = localStorage.getItem('pahantalk_user');
         let currentChat = null;
+        let allUsers = [];
 
         async function apiCall(url, data) {
             const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
@@ -241,52 +164,52 @@ HTML = '''<!DOCTYPE html>
             if(res.success) {
                 currentUser = u;
                 localStorage.setItem('pahantalk_user', u);
-                document.getElementById('loginScreen').style.display = 'none';
-                loadProfile();
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('chatScreen').classList.remove('hidden');
                 loadChats();
+                loadAllUsers();
             } else alert('Неверный логин/пароль');
         }
 
         function logout() {
-            currentUser = null; localStorage.removeItem('pahantalk_user'); location.reload();
-        }
-
-        async function loadProfile() {
-            const res = await fetch('/user/' + currentUser);
-            const user = await res.json();
-            document.getElementById('myAvatar').innerText = user.display_name ? user.display_name[0] : currentUser[0];
+            currentUser = null;
+            localStorage.removeItem('pahantalk_user');
+            location.reload();
         }
 
         async function loadChats() {
             const res = await fetch('/chats/' + currentUser);
             const chats = await res.json();
             const list = document.getElementById('chatsList');
-            list.innerHTML = '';
+            list.innerHTML = '<h4>Ваши чаты:</h4>';
             for(let chat of chats) {
                 list.innerHTML += `<div class="chat-item" onclick="selectChat('${chat.username}')">
-                    <div class="chat-avatar">${chat.username[0]}</div>
-                    <div class="chat-info">
-                        <div class="chat-name">${chat.username}</div>
-                        <div class="chat-last">${chat.last_msg || ''}</div>
-                    </div>
+                    <b>${chat.username}</b><br>
+                    <small>${chat.last_msg || ''}</small>
                 </div>`;
             }
         }
 
-        function goBack() {
-            document.getElementById('chatsPanel').style.display = 'flex';
-            document.getElementById('dialogPanel').style.display = 'none';
+        async function loadAllUsers() {
+            const res = await fetch('/users');
+            allUsers = await res.json();
+        }
+
+        function searchUsers() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const results = document.getElementById('searchResults');
+            if(q.length < 2) { results.innerHTML = ''; return; }
+            const filtered = allUsers.filter(u => u.includes(q) && u !== currentUser).slice(0,5);
+            results.innerHTML = filtered.map(u => 
+                `<div class="search-result" onclick="selectChat('${u}')">@${u}</div>`
+            ).join('');
         }
 
         async function selectChat(username) {
             currentChat = username;
-            document.getElementById('dialogName').innerText = username;
-            document.getElementById('dialogStatus').innerText = 'в сети';
-            document.getElementById('dialogAvatar').innerText = username[0];
-            if(window.innerWidth <= 480) {
-                document.getElementById('chatsPanel').style.display = 'none';
-                document.getElementById('dialogPanel').style.display = 'flex';
-            }
+            document.getElementById('currentChat').innerText = 'Чат с @' + username;
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchInput').value = '';
             loadMessages();
         }
 
@@ -296,28 +219,33 @@ HTML = '''<!DOCTYPE html>
             const text = input.value;
             if(!text) return;
             await apiCall('/send', {from:currentUser, to:currentChat, text});
-            input.value = ''; loadMessages();
+            input.value = '';
+            loadMessages();
+            loadChats();
         }
 
         async function loadMessages() {
             if(!currentChat) return;
             const res = await fetch('/messages/' + currentUser + '?with=' + currentChat);
             const msgs = await res.json();
-            const area = document.getElementById('messagesArea');
+            const area = document.getElementById('messages');
             area.innerHTML = msgs.reverse().map(m => {
                 const own = m.from === currentUser;
-                return `<div class="message ${own ? 'own' : 'other'}">
-                    ${!own ? '<b>'+m.from+'</b> ' : ''}${m.text}
+                return `<div class="message ${own ? 'my-message' : 'other-message'}">
+                    <b>${m.from}</b> ${m.text}<br>
                     <small>${m.time || ''}</small>
                 </div>`;
             }).join('');
+            area.scrollTop = area.scrollHeight;
         }
 
-        if(currentUser) { 
-            document.getElementById('loginScreen').style.display = 'none'; 
-            loadProfile(); 
-            loadChats(); 
+        if(currentUser) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('chatScreen').classList.remove('hidden');
+            loadChats();
+            loadAllUsers();
         }
+
         setInterval(() => { if(currentChat) loadMessages(); }, 3000);
     </script>
 </body>
@@ -411,14 +339,14 @@ def get_chats(username):
     conn.close()
     return jsonify(chats)
 
-@app.route('/user/<username>')
-def get_user(username):
+@app.route('/users')
+def get_users():
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
-    c.execute("SELECT display_name FROM users WHERE username=?", (username,))
-    row = c.fetchone()
+    c.execute("SELECT username FROM users")
+    users = [r[0] for r in c.fetchall()]
     conn.close()
-    return jsonify({'display_name': row[0] if row else username})
+    return jsonify(users)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
