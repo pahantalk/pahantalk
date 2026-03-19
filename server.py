@@ -1,9 +1,23 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import sqlite3
 from datetime import datetime
 import os
+import uuid
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+
+UPLOAD_FOLDER = 'uploads'
+AVATAR_FOLDER = 'avatars'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(AVATAR_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['AVATAR_FOLDER'] = AVATAR_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def init_db():
     conn = sqlite3.connect('pahantalk.db')
@@ -14,18 +28,41 @@ def init_db():
                   password TEXT NOT NULL,
                   display_name TEXT,
                   avatar TEXT,
-                  status TEXT DEFAULT 'в сети')''')
+                  status TEXT DEFAULT 'в сети',
+                  bio TEXT DEFAULT '',
+                  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS messages
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   from_user TEXT NOT NULL,
                   to_user TEXT NOT NULL,
-                  text TEXT NOT NULL,
+                  text TEXT,
+                  image TEXT,
+                  file TEXT,
+                  file_name TEXT,
+                  file_size INTEGER,
+                  voice TEXT,
+                  reply_to INTEGER DEFAULT 0,
+                  forwarded_from TEXT,
+                  reactions TEXT DEFAULT '',
                   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS chats
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  user1 TEXT NOT NULL,
+                  user2 TEXT NOT NULL,
+                  last_message TEXT,
+                  last_time TIMESTAMP,
+                  is_pinned BOOLEAN DEFAULT 0,
+                  is_archived BOOLEAN DEFAULT 0,
+                  UNIQUE(user1, user2))''')
     try:
         c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
                   ("2kenta", "123", "Кента"))
         c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
                   ("pahan", "123", "Пахан"))
+        c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
+                  ("artur", "123", "Артур"))
+        c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
+                  ("sanya", "123", "Саня"))
     except:
         pass
     conn.commit()
@@ -34,320 +71,725 @@ def init_db():
 init_db()
 
 HTML = '''<!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>ПАХАНТАЛК</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ПАХАНТАЛК — Telegram Web</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
+        /* ===== СБРОС И ГЛОБАЛЬНЫЕ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #0e1621;
+            background: #e6ebf0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .tg-container {
+            display: flex;
+            width: 1440px;
+            max-width: 100%;
+            height: 95vh;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        /* ===== ЛЕВАЯ ПАНЕЛЬ (64px) ===== */
+        .left-panel {
+            width: 64px;
+            background: #ffffff;
+            border-right: 1px solid #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .avatar-32 {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #2aabee;
             color: white;
-            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            overflow: hidden;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #17212b;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        h1 { color: #2b7ad0; text-align: center; margin-bottom: 20px; }
-        .row { display: flex; gap: 20px; }
-        .col {
-            flex: 1;
-            background: #1e2a36;
-            padding: 15px;
-            border-radius: 8px;
-        }
-        input, button {
+
+        .avatar-32 img {
             width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border: none;
-            border-radius: 5px;
+            height: 100%;
+            object-fit: cover;
         }
-        button {
-            background: #2b7ad0;
+
+        .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            background: #2ecc71;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6d7a8d;
+            font-size: 20px;
+            margin: 4px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-icon:hover {
+            background: #f0f0f0;
+            color: #2aabee;
+        }
+
+        .nav-icon.active {
+            background: #e8f4ff;
+            color: #2aabee;
+        }
+
+        .nav-icon[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 48px;
+            background: #1f2a3a;
             color: white;
-            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        .chat-item {
-            padding: 10px;
-            border-bottom: 1px solid #253441;
-            cursor: pointer;
+
+        .spacer {
+            flex: 1;
         }
-        .chat-item:hover { background: #253441; }
-        .message {
-            padding: 8px 12px;
-            margin: 5px 0;
+
+        .bottom-icon {
+            margin-top: auto;
+        }
+
+        /* ===== ЦЕНТРАЛЬНАЯ ПАНЕЛЬ (320px) ===== */
+        .chats-panel {
+            width: 320px;
+            background: #ffffff;
+            border-right: 1px solid #f0f0f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-section {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .search-wrapper {
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8e9aab;
+            font-size: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 12px 10px 40px;
+            border: none;
+            background: #f4f6f9;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .search-input:focus {
+            background: #ffffff;
+            box-shadow: 0 0 0 2px rgba(42, 171, 238, 0.1);
+        }
+
+        .filters {
+            display: flex;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .filter-chip {
+            padding: 6px 16px;
+            background: #f4f6f9;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #1f2a3a;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+
+        .filter-chip:hover {
+            background: #e8f4ff;
+        }
+
+        .filter-chip.active {
+            background: #2aabee;
+            color: white;
+        }
+
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .archive-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6d7a8d;
+            font-size: 13px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .archive-header:hover {
+            background: #f4f6f9;
+        }
+
+        .archive-count {
+            margin-left: auto;
+            background: #f0f0f0;
+            padding: 2px 8px;
             border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .chat-item:hover {
+            background: #f4f6f9;
+        }
+
+        .chat-item:hover .chat-actions {
+            display: flex;
+        }
+
+        .chat-item.active {
+            background: #e8f4ff;
+            border-left-color: #2aabee;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2aabee;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+            margin-right: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1f2a3a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            color: #8e9aab;
+        }
+
+        .chat-last-msg {
+            font-size: 13px;
+            color: #8e9aab;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-badge {
+            min-width: 20px;
+            height: 20px;
+            background: #2aabee;
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 0 6px;
+            margin-left: 8px;
+        }
+
+        .chat-pinned {
+            color: #8e9aab;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .chat-actions {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: none;
+            gap: 4px;
+            background: white;
+            padding: 4px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .chat-action {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6d7a8d;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .chat-action:hover {
+            background: #f0f0f0;
+        }
+
+        /* ===== ПРАВАЯ ПАНЕЛЬ (ОТКРЫТЫЙ ЧАТ) ===== */
+        .dialog-panel {
+            flex: 1;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #ffffff;
+        }
+
+        .dialog-info {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .dialog-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #2aabee;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+            margin-right: 14px;
+            overflow: hidden;
+        }
+
+        .dialog-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dialog-name-block {
+            line-height: 1.3;
+        }
+
+        .dialog-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1f2a3a;
+        }
+
+        .dialog-status {
+            font-size: 13px;
+            color: #8e9aab;
+        }
+
+        .dialog-header-icons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .header-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6d7a8d;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .header-icon:hover {
+            background: #f0f0f0;
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f9f9f9;
+        }
+
+        .date-divider {
+            text-align: center;
+            margin: 16px 0 8px;
+            font-size: 12px;
+            color: #8e9aab;
+            position: relative;
+        }
+
+        .date-divider span {
+            background: #f9f9f9;
+            padding: 0 12px;
+            z-index: 1;
+            position: relative;
+        }
+
+        .date-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #f0f0f0;
+            z-index: 0;
+        }
+
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
             max-width: 70%;
         }
-        .my-message {
-            background: #2b5278;
-            margin-left: auto;
+
+        .message-wrapper.own {
+            align-self: flex-end;
         }
-        .other-message {
-            background: #1e2a36;
+
+        .message {
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.2s ease;
         }
-        #messages {
-            height: 400px;
-            overflow-y: auto;
-            padding: 10px;
-            background: #17212b;
-            border-radius: 8px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .hidden { display: none; }
-        .search-result {
-            padding: 8px;
+
+        .message.own {
+            background: #2aabee;
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.other {
+            background: #ffffff;
+            color: #1f2a3a;
+            border: 1px solid #f0f0f0;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message.forwarded {
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+
+        .forward-label {
+            font-size: 12px;
+            color: #8e9aab;
+            margin-bottom: 4px;
+        }
+
+        .reply-block {
+            background: rgba(0,0,0,0.05);
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-bottom: 4px;
+            font-size: 13px;
+            border-left: 3px solid #2aabee;
+        }
+
+        .message-image {
+            max-width: 300px;
+            border-radius: 12px;
+            margin-top: 5px;
             cursor: pointer;
-            border-bottom: 1px solid #253441;
-        }
-        .search-result:hover { background: #253441; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>💬 ПАХАНТАЛК</h1>
-        <div id="loginScreen">
-            <input type="text" id="loginUser" placeholder="Логин" value="2kenta">
-            <input type="password" id="loginPass" placeholder="Пароль" value="123">
-            <button onclick="login()">Войти</button>
-            <button onclick="register()">Регистрация</button>
-        </div>
-        <div id="chatScreen" class="hidden">
-            <div class="row">
-                <div class="col" style="max-width: 300px;">
-                    <h3>Чаты</h3>
-                    <input type="text" id="searchInput" placeholder="Поиск пользователей..." oninput="searchUsers()">
-                    <div id="searchResults"></div>
-                    <div id="chatsList"></div>
-                </div>
-                <div class="col">
-                    <div style="display: flex; justify-content: space-between;">
-                        <h3 id="currentChat">Выберите чат</h3>
-                        <button onclick="logout()">Выйти</button>
-                    </div>
-                    <div id="messages"></div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="messageInput" placeholder="Сообщение" style="flex: 1;">
-                        <button onclick="sendMessage()" style="width: auto;">➤</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script>
-        let currentUser = localStorage.getItem('pahantalk_user');
-        let currentChat = null;
-        let allUsers = [];
-
-        async function apiCall(url, data) {
-            const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-            return res.json();
         }
 
-        async function register() {
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            const res = await apiCall('/register', {username:u, password:p});
-            alert(res.success ? 'OK' : 'Ошибка');
+        .message-file {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0,0,0,0.03);
+            padding: 10px;
+            border-radius: 12px;
+            margin-top: 5px;
         }
 
-        async function login() {
-            const u = document.getElementById('loginUser').value;
-            const p = document.getElementById('loginPass').value;
-            const res = await apiCall('/login', {username:u, password:p});
-            if(res.success) {
-                currentUser = u;
-                localStorage.setItem('pahantalk_user', u);
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('chatScreen').classList.remove('hidden');
-                loadChats();
-                loadAllUsers();
-            } else alert('Неверный логин/пароль');
+        .file-icon {
+            font-size: 24px;
         }
 
-        function logout() {
-            currentUser = null;
-            localStorage.removeItem('pahantalk_user');
-            location.reload();
+        .file-info {
+            flex: 1;
         }
 
-        async function loadChats() {
-            const res = await fetch('/chats/' + currentUser);
-            const chats = await res.json();
-            const list = document.getElementById('chatsList');
-            list.innerHTML = '<h4>Ваши чаты:</h4>';
-            for(let chat of chats) {
-                list.innerHTML += `<div class="chat-item" onclick="selectChat('${chat.username}')">
-                    <b>${chat.username}</b><br>
-                    <small>${chat.last_msg || ''}</small>
-                </div>`;
-            }
+        .file-name {
+            font-weight: 600;
+            font-size: 13px;
         }
 
-        async function loadAllUsers() {
-            const res = await fetch('/users');
-            allUsers = await res.json();
+        .file-size {
+            font-size: 11px;
+            color: #8e9aab;
         }
 
-        function searchUsers() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const results = document.getElementById('searchResults');
-            if(q.length < 2) { results.innerHTML = ''; return; }
-            const filtered = allUsers.filter(u => u.includes(q) && u !== currentUser).slice(0,5);
-            results.innerHTML = filtered.map(u => 
-                `<div class="search-result" onclick="selectChat('${u}')">@${u}</div>`
-            ).join('');
+        .file-progress {
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 4px;
+            width: 100%;
         }
 
-        async function selectChat(username) {
-            currentChat = username;
-            document.getElementById('currentChat').innerText = 'Чат с @' + username;
-            document.getElementById('searchResults').innerHTML = '';
-            document.getElementById('searchInput').value = '';
-            loadMessages();
+        .file-progress-fill {
+            height: 100%;
+            background: #2aabee;
+            border-radius: 2px;
+            width: 45%;
         }
 
-        async function sendMessage() {
-            if(!currentChat) return;
-            const input = document.getElementById('messageInput');
-            const text = input.value;
-            if(!text) return;
-            await apiCall('/send', {from:currentUser, to:currentChat, text});
-            input.value = '';
-            loadMessages();
-            loadChats();
+        .voice-message {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
         }
 
-        async function loadMessages() {
-            if(!currentChat) return;
-            const res = await fetch('/messages/' + currentUser + '?with=' + currentChat);
-            const msgs = await res.json();
-            const area = document.getElementById('messages');
-            area.innerHTML = msgs.reverse().map(m => {
-                const own = m.from === currentUser;
-                return `<div class="message ${own ? 'my-message' : 'other-message'}">
-                    <b>${m.from}</b> ${m.text}<br>
-                    <small>${m.time || ''}</small>
-                </div>`;
-            }).join('');
-            area.scrollTop = area.scrollHeight;
+        .voice-play {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #2aabee;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
         }
 
-        if(currentUser) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('chatScreen').classList.remove('hidden');
-            loadChats();
-            loadAllUsers();
+        .voice-wave {
+            flex: 1;
+            height: 30px;
+            background: linear-gradient(90deg, #2aabee 20%, #e0e0e0 20%);
+            border-radius: 15px;
         }
 
-        setInterval(() => { if(currentChat) loadMessages(); }, 3000);
-    </script>
-</body>
-</html>'''
+        .voice-duration {
+            font-size: 12px;
+            color: #8e9aab;
+        }
 
-@app.route('/')
-def index():
-    return HTML
+        .message-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #8e9aab;
+        }
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.json
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    try:
-        c.execute("INSERT INTO users (username, password) VALUES (?, ?)",
-                  (data['username'], data['password']))
-        conn.commit()
-        return jsonify({'success': True})
-    except:
-        return jsonify({'success': False})
-    finally:
-        conn.close()
+        .message-status {
+            font-size: 12px;
+        }
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.json
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE username=? AND password=?",
-              (data['username'], data['password']))
-    user = c.fetchone()
-    conn.close()
-    return jsonify({'success': bool(user)})
+        .reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
 
-@app.route('/send', methods=['POST'])
-def send():
-    data = request.json
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    c.execute("INSERT INTO messages (from_user, to_user, text) VALUES (?, ?, ?)",
-              (data['from'], data['to'], data['text']))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
+        .reaction {
+            background: rgba(0,0,0,0.05);
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
 
-@app.route('/messages/<username>')
-def get_messages(username):
-    with_user = request.args.get('with', '')
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    if with_user:
-        c.execute("""SELECT from_user, to_user, text, 
-                     strftime('%H:%M', timestamp) as time 
-                     FROM messages 
-                     WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
-                     ORDER BY timestamp DESC LIMIT 50""",
-                  (username, with_user, with_user, username))
-    else:
-        c.execute("""SELECT from_user, to_user, text, 
-                     strftime('%H:%M', timestamp) as time 
-                     FROM messages 
-                     WHERE from_user=? OR to_user=?
-                     ORDER BY timestamp DESC LIMIT 50""",
-                  (username, username))
-    msgs = [{'from': r[0], 'to': r[1], 'text': r[2], 'time': r[3]} for r in c.fetchall()]
-    conn.close()
-    return jsonify(msgs)
+        .reaction:hover {
+            background: rgba(0,0,0,0.1);
+        }
 
-@app.route('/chats/<username>')
-def get_chats(username):
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    c.execute("""SELECT DISTINCT 
-                    CASE WHEN from_user=? THEN to_user ELSE from_user END
-                 FROM messages 
-                 WHERE from_user=? OR to_user=?""",
-              (username, username, username))
-    chats = []
-    for row in c.fetchall():
-        chat_user = row[0]
-        if not chat_user or chat_user == username:
-            continue
-        c2 = conn.cursor()
-        c2.execute("""SELECT text FROM messages 
-                      WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
-                      ORDER BY timestamp DESC LIMIT 1""",
-                   (username, chat_user, chat_user, username))
-        last = c2.fetchone()
-        chats.append({'username': chat_user, 'last_msg': last[0] if last else ''})
-    conn.close()
-    return jsonify(chats)
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid #f0f0f0;
+            border-radius: 20px;
+            width: fit-content;
+            margin: 8px 0;
+        }
 
-@app.route('/users')
-def get_users():
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    c.execute("SELECT username FROM users")
-    users = [r[0] for r in c.fetchall()]
-    conn.close()
-    return jsonify(users)
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #8e9aab;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        .input-area {
+            padding: 12px 20px;
+            background: #ffffff;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .input-tools {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tool-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6d7a8d;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .tool-icon:hover {
+            background: #f0f0f0;
+        }
+
+        .message-input-wrapper {
+            flex: 1;
+            background: #f4f6f9;
+            border-radius: 24px;
+            padding: 8px 16px;
+        }
+
+        .message-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 14px;
+ 
