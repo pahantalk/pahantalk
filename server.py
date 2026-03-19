@@ -49,11 +49,10 @@ def init_db():
 
 init_db()
 
-HTML = '''
-<!DOCTYPE html>
+HTML = '''<!DOCTYPE html>
 <html>
 <head>
-    <title>ПАХАНТАЛК — Профили</title>
+    <title>ПАХАНТАЛК — Telegram Web</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -63,64 +62,46 @@ HTML = '''
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1e1e1e;
-            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #0e1621;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
         }
-        .container {
-            width: 100%;
-            max-width: 800px;
-            background: #2a2a2a;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-        }
-        h1 {
-            color: gold;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .flex {
+        .tg-container {
             display: flex;
-            gap: 20px;
-        }
-        .sidebar {
-            width: 200px;
-            background: #1a1a1a;
+            width: 1400px;
+            max-width: 100%;
+            height: 95vh;
+            background: #17212b;
             border-radius: 12px;
-            padding: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
-        .main {
-            flex: 1;
-        }
-        .profile-card {
-            background: #1a1a1a;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            border: 1px solid #3a3a3a;
-        }
-        .profile-card:hover {
-            border-color: gold;
+        .left-panel {
+            width: 70px;
+            background: #1e2a36;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            border-right: 1px solid #253441;
         }
         .avatar {
-            width: 60px;
-            height: 60px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            background: gold;
+            background: #2b7ad0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            color: black;
-            margin-bottom: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 30px;
+            cursor: pointer;
             overflow: hidden;
         }
         .avatar img {
@@ -128,56 +109,263 @@ HTML = '''
             height: 100%;
             object-fit: cover;
         }
-        input, button, textarea {
-            width: 100%;
-            padding: 12px;
+        .nav-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f91a4;
+            font-size: 24px;
             margin: 8px 0;
-            border: none;
-            border-radius: 8px;
-            background: #1a1a1a;
-            color: white;
-            border: 1px solid #3a3a3a;
-        }
-        button {
-            background: gold;
-            color: black;
-            font-weight: bold;
             cursor: pointer;
         }
-        button:hover {
-            background: #ffd700;
+        .nav-icon:hover {
+            background: #253441;
+            color: white;
         }
-        #messages {
-            height: 300px;
-            overflow-y: auto;
-            background: #1a1a1a;
-            padding: 10px;
+        .nav-icon.active {
+            background: #2b7ad0;
+            color: white;
+        }
+        .chats-panel {
+            width: 320px;
+            background: #17212b;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #253441;
+        }
+        .chats-header {
+            padding: 16px;
+            border-bottom: 1px solid #253441;
+        }
+        .chats-header h2 {
+            color: white;
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+        .search-box {
+            background: #1e2a36;
+            border: 1px solid #253441;
             border-radius: 8px;
-            margin: 10px 0;
+            padding: 10px 12px;
+            color: white;
+            width: 100%;
+            font-size: 14px;
+            outline: none;
+        }
+        .chats-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #1e2a36;
+        }
+        .chat-item:hover {
+            background: #1e2a36;
+        }
+        .chat-item.active {
+            background: #2b5278;
+        }
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #2b7ad0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 12px;
+            overflow: hidden;
+        }
+        .chat-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .chat-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .chat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        .chat-name {
+            color: white;
+            font-weight: 500;
+            font-size: 15px;
+        }
+        .chat-time {
+            color: #7f91a4;
+            font-size: 11px;
+        }
+        .chat-last-msg {
+            color: #7f91a4;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dialog-panel {
+            flex: 1;
+            background: #17212b;
+            display: flex;
+            flex-direction: column;
+        }
+        .dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            border-bottom: 1px solid #253441;
+            background: #1e2a36;
+        }
+        .dialog-header-left {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .dialog-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #2b7ad0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            margin-right: 14px;
+            overflow: hidden;
+        }
+        .dialog-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .dialog-info {
+            line-height: 1.3;
+        }
+        .dialog-name {
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .dialog-status {
+            color: #4CAF50;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+        }
+        .dialog-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .dialog-header-icons {
+            display: flex;
+            gap: 16px;
+            color: #7f91a4;
+            font-size: 20px;
+        }
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #17212b;
         }
         .message {
-            margin: 8px 0;
-            padding: 8px 12px;
-            border-radius: 12px;
-            max-width: 80%;
+            max-width: 65%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
         }
-        .my-message {
+        .message.own {
             background: #2b5278;
-            margin-left: auto;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 6px;
         }
-        .other-message {
-            background: #3a3a3a;
+        .message.other {
+            background: #1e2a36;
+            color: #e0e0e0;
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+        }
+        .message img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 5px;
+            cursor: pointer;
+        }
+        .message small {
+            display: block;
+            font-size: 11px;
+            color: #7f91a4;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .input-area {
+            padding: 12px 20px;
+            background: #1e2a36;
+            border-top: 1px solid #253441;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .input-area input {
+            flex: 1;
+            background: #17212b;
+            border: 1px solid #253441;
+            border-radius: 24px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+        .send-btn {
+            background: #2b7ad0;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
         }
         .hidden {
             display: none;
         }
-        .search-result {
-            padding: 8px;
+        .logout-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
             cursor: pointer;
-            border-bottom: 1px solid #3a3a3a;
-        }
-        .search-result:hover {
-            background: #2a2a2a;
+            margin-left: 10px;
         }
         .modal {
             position: fixed;
@@ -192,101 +380,64 @@ HTML = '''
             z-index: 1000;
         }
         .modal-content {
-            background: #2a2a2a;
+            background: #17212b;
             padding: 30px;
             border-radius: 16px;
-            max-width: 400px;
-            width: 90%;
-        }
-        .emoji-picker {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-            padding: 10px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            margin-top: 5px;
-        }
-        .emoji-picker span {
-            font-size: 24px;
-            text-align: center;
-            cursor: pointer;
-            padding: 5px;
-        }
-        .emoji-picker span:hover {
-            background: #3a3a3a;
-            border-radius: 4px;
+            width: 400px;
+            max-width: 90%;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>💬 ПАХАНТАЛК</h1>
-        
-        <div id="loginScreen">
+    <div class="tg-container">
+        <div class="left-panel">
+            <div class="avatar" id="myAvatar" onclick="openMyProfile()"></div>
+            <div class="nav-icon active">💬</div>
+            <div class="nav-icon">👥</div>
+            <div class="nav-icon">📞</div>
+            <div class="nav-icon">⚙️</div>
+        </div>
+        <div class="chats-panel">
+            <div class="chats-header">
+                <h2>Чаты</h2>
+                <input class="search-box" id="searchInput" placeholder="Поиск">
+            </div>
+            <div class="chats-list" id="chatsList"></div>
+        </div>
+        <div class="dialog-panel">
+            <div class="dialog-header" id="dialogHeader">
+                <div class="dialog-header-left" onclick="openProfile(currentChat)">
+                    <div class="dialog-avatar" id="dialogAvatar"></div>
+                    <div class="dialog-info">
+                        <div class="dialog-name" id="dialogName">Выберите чат</div>
+                        <div class="dialog-status" id="dialogStatus"></div>
+                    </div>
+                </div>
+                <div class="dialog-header-icons">
+                    <span>🔍</span>
+                    <span>⋮</span>
+                    <button class="logout-btn" onclick="logout()">Выйти</button>
+                </div>
+            </div>
+            <div class="messages-area" id="messagesArea"></div>
+            <div class="input-area" id="inputArea">
+                <input type="text" id="messageInput" placeholder="Сообщение">
+                <button class="send-btn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+    <div id="loginScreen" class="modal">
+        <div class="modal-content">
+            <h2 style="color:white;">Вход</h2>
             <input type="text" id="loginUser" placeholder="Логин">
             <input type="password" id="loginPass" placeholder="Пароль">
             <button onclick="login()">Войти</button>
             <button onclick="register()">Регистрация</button>
         </div>
-
-        <div id="chatScreen" class="hidden">
-            <div class="flex">
-                <div class="sidebar">
-                    <div class="profile-card" onclick="openMyProfile()">
-                        <div class="avatar" id="myAvatar"></div>
-                        <div><strong id="myName">Загрузка...</strong></div>
-                        <div style="font-size: 12px; color: gold;" id="myStatus"></div>
-                    </div>
-                    <h3>Чаты</h3>
-                    <div id="chatsList"></div>
-                    <h3>Поиск</h3>
-                    <input type="text" id="searchInput" placeholder="Найти пользователя..." oninput="searchUsers()">
-                    <div id="searchResults"></div>
-                </div>
-                <div class="main">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h2 id="chatWith">Выберите чат</h2>
-                        <button onclick="logout()" style="width: auto;">Выйти</button>
-                    </div>
-                    <div id="messages"></div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="text" id="messageInput" placeholder="Сообщение..." style="flex: 1;">
-                        <button onclick="toggleEmoji()" style="width: auto;">😊</button>
-                        <button onclick="sendMessage()" style="width: auto;">➤</button>
-                    </div>
-                    <div id="emojiPicker" class="emoji-picker hidden">
-                        <span onclick="addEmoji('😊')">😊</span>
-                        <span onclick="addEmoji('😂')">😂</span>
-                        <span onclick="addEmoji('❤️')">❤️</span>
-                        <span onclick="addEmoji('🔥')">🔥</span>
-                        <span onclick="addEmoji('👍')">👍</span>
-                        <span onclick="addEmoji('😢')">😢</span>
-                        <span onclick="addEmoji('🎉')">🎉</span>
-                        <span onclick="addEmoji('💀')">💀</span>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
-
-    <div id="profileModal" class="modal hidden">
-        <div class="modal-content">
-            <h2 id="modalTitle">Профиль</h2>
-            <div class="avatar" id="modalAvatar" onclick="document.getElementById('avatarInput').click()"></div>
-            <input type="text" id="modalDisplayName" placeholder="Отображаемое имя">
-            <input type="text" id="modalStatus" placeholder="Статус">
-            <textarea id="modalBio" placeholder="О себе"></textarea>
-            <button onclick="saveProfile()">Сохранить</button>
-            <button onclick="closeModal()">Закрыть</button>
-            <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="uploadAvatar()">
-        </div>
-    </div>
-
     <script>
-        let currentUser = null;
+        let currentUser = localStorage.getItem('pahantalk_user');
         let currentChat = null;
-        let allUsers = [];
 
         async function apiCall(url, data) {
             const res = await fetch(url, {
@@ -301,7 +452,7 @@ HTML = '''
             const u = document.getElementById('loginUser').value;
             const p = document.getElementById('loginPass').value;
             const res = await apiCall('/register', {username: u, password: p});
-            alert(res.success ? 'Регистрация успешна' : 'Ошибка');
+            alert(res.success ? 'OK' : 'Ошибка');
         }
 
         async function login() {
@@ -310,11 +461,10 @@ HTML = '''
             const res = await apiCall('/login', {username: u, password: p});
             if (res.success) {
                 currentUser = u;
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('chatScreen').classList.remove('hidden');
+                localStorage.setItem('pahantalk_user', u);
+                document.getElementById('loginScreen').style.display = 'none';
                 loadProfile();
                 loadChats();
-                loadAllUsers();
             } else {
                 alert('Неверный логин/пароль');
             }
@@ -322,39 +472,16 @@ HTML = '''
 
         function logout() {
             currentUser = null;
-            currentChat = null;
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('chatScreen').classList.add('hidden');
+            localStorage.removeItem('pahantalk_user');
+            location.reload();
         }
 
-       async function loadProfile() {
-    if (!currentUser) return;
-    try {
-        const res = await fetch('/user/' + currentUser);
-        if (!res.ok) {
-            console.error('Ошибка сервера');
-            return;
-        }
-        const user = await res.json();
-        if (user && user.username) {
-            document.getElementById('myName').innerText = user.display_name || currentUser;
-            document.getElementById('myStatus').innerText = user.status || '';
+        async function loadProfile() {
+            const res = await fetch('/user/' + currentUser);
+            const user = await res.json();
             const avatar = document.getElementById('myAvatar');
-            if (user.avatar) {
-                avatar.innerHTML = `<img src="${user.avatar}">`;
-            } else {
-                avatar.innerText = (currentUser[0] || '').toUpperCase();
-            }
-        } else {
-            // Если профиля нет — создаём заглушку
-            document.getElementById('myName').innerText = currentUser;
-            document.getElementById('myStatus').innerText = '';
-            document.getElementById('myAvatar').innerText = (currentUser[0] || '').toUpperCase();
+            avatar.innerHTML = user.avatar ? `<img src="${user.avatar}">` : (currentUser[0] || '').toUpperCase();
         }
-    } catch (e) {
-        console.error('Ошибка загрузки профиля:', e);
-    }
-} 
 
         async function loadChats() {
             const res = await fetch('/chats/' + currentUser);
@@ -364,45 +491,39 @@ HTML = '''
             for (let chat of chats) {
                 const u = await (await fetch('/user/' + chat.username)).json();
                 list.innerHTML += `
-                    <div class="profile-card" onclick="selectChat('${chat.username}')">
-                        <div class="avatar">${u.avatar ? `<img src="${u.avatar}">` : chat.username[0]}</div>
-                        <div><strong>${u.display_name || chat.username}</strong></div>
-                        <div style="font-size: 12px;">${chat.last_msg || ''}</div>
+                    <div class="chat-item ${chat.username === currentChat ? 'active' : ''}" onclick="selectChat('${chat.username}')">
+                        <div class="chat-avatar">${u.avatar ? `<img src="${u.avatar}">` : chat.username[0]}</div>
+                        <div class="chat-info">
+                            <div class="chat-row">
+                                <span class="chat-name">${u.display_name || chat.username}</span>
+                                <span class="chat-time">${chat.last_time || ''}</span>
+                            </div>
+                            <div class="chat-last-msg">${chat.last_msg || ''}</div>
+                        </div>
                     </div>
                 `;
             }
         }
 
-        async function loadAllUsers() {
-            const res = await fetch('/users');
-            allUsers = await res.json();
-        }
-
-        function searchUsers() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const res = document.getElementById('searchResults');
-            if (q.length < 2) {
-                res.innerHTML = '';
-                return;
-            }
-            const filtered = allUsers.filter(u => u.includes(q) && u !== currentUser).slice(0,5);
-            res.innerHTML = filtered.map(u => 
-                `<div class="search-result" onclick="selectChat('${u}')">@${u}</div>`
-            ).join('');
-        }
-
-        function selectChat(u) {
-            currentChat = u;
-            document.getElementById('chatWith').innerText = 'Чат с @' + u;
+        async function selectChat(username) {
+            currentChat = username;
+            document.querySelectorAll('.chat-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            const u = await (await fetch('/user/' + username)).json();
+            document.getElementById('dialogName').innerText = u.display_name || username;
+            document.getElementById('dialogStatus').innerText = u.status || 'в сети';
+            const avatar = document.getElementById('dialogAvatar');
+            avatar.innerHTML = u.avatar ? `<img src="${u.avatar}">` : (username[0] || '').toUpperCase();
             loadMessages();
         }
 
         async function sendMessage() {
             if (!currentChat) return;
-            const text = document.getElementById('messageInput').value;
+            const input = document.getElementById('messageInput');
+            const text = input.value;
             if (!text) return;
             await apiCall('/send', {from: currentUser, to: currentChat, text});
-            document.getElementById('messageInput').value = '';
+            input.value = '';
             loadMessages();
         }
 
@@ -410,71 +531,27 @@ HTML = '''
             if (!currentChat) return;
             const res = await fetch('/messages/' + currentUser + '?with=' + currentChat);
             const msgs = await res.json();
-            const container = document.getElementById('messages');
-            container.innerHTML = msgs.reverse().map(m => 
-                `<div class="message ${m.from === currentUser ? 'my-message' : 'other-message'}">
-                    <b>${m.from}:</b> ${m.text}
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = msgs.reverse().map(m => {
+                const own = m.from === currentUser;
+                return `<div class="message ${own ? 'own' : 'other'}">
+                    ${!own ? '<b>' + m.from + '</b> ' : ''}${m.text}
                     <small>${m.time || ''}</small>
-                </div>`
-            ).join('');
+                </div>`;
+            }).join('');
+            area.scrollTop = area.scrollHeight;
         }
 
-        function toggleEmoji() {
-            document.getElementById('emojiPicker').classList.toggle('hidden');
-        }
-
-        function addEmoji(e) {
-            document.getElementById('messageInput').value += e;
-            toggleEmoji();
-        }
-
-        function openMyProfile() {
-            openProfile(currentUser);
-        }
-
-        async function openProfile(username) {
-            const res = await fetch('/user/' + username);
-            const user = await res.json();
-            document.getElementById('modalTitle').innerText = 'Профиль @' + username;
-            document.getElementById('modalDisplayName').value = user.display_name || '';
-            document.getElementById('modalStatus').value = user.status || '';
-            document.getElementById('modalBio').value = user.bio || '';
-            const avatar = document.getElementById('modalAvatar');
-            avatar.innerHTML = user.avatar ? `<img src="${user.avatar}">` : (username[0] || '').toUpperCase();
-            document.getElementById('profileModal').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('profileModal').classList.add('hidden');
-        }
-
-        async function saveProfile() {
-            const data = {
-                display_name: document.getElementById('modalDisplayName').value,
-                status: document.getElementById('modalStatus').value,
-                bio: document.getElementById('modalBio').value
-            };
-            await apiCall('/update_profile/' + currentUser, data);
+        if (currentUser) {
+            document.getElementById('loginScreen').style.display = 'none';
             loadProfile();
-            closeModal();
-        }
-
-        async function uploadAvatar() {
-            const input = document.getElementById('avatarInput');
-            if (!input.files.length) return;
-            const fd = new FormData();
-            fd.append('avatar', input.files[0]);
-            fd.append('username', currentUser);
-            await fetch('/upload-avatar', {method: 'POST', body: fd});
-            loadProfile();
-            closeModal();
+            loadChats();
         }
 
         setInterval(() => { if (currentChat) loadMessages(); }, 3000);
     </script>
 </body>
-</html>
-'''
+</html>'''
 
 @app.route('/')
 def index():
@@ -555,12 +632,17 @@ def get_chats(username):
         if not chat_user or chat_user == username:
             continue
         c2 = conn.cursor()
-        c2.execute("""SELECT text FROM messages 
+        c2.execute("""SELECT text, strftime('%H:%M', timestamp) 
+                      FROM messages 
                       WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
                       ORDER BY timestamp DESC LIMIT 1""",
                    (username, chat_user, chat_user, username))
         last = c2.fetchone()
-        chats.append({'username': chat_user, 'last_msg': last[0] if last else ''})
+        chats.append({
+            'username': chat_user,
+            'last_msg': last[0] if last else '',
+            'last_time': last[1] if last else ''
+        })
     conn.close()
     return jsonify(chats)
 
@@ -568,7 +650,7 @@ def get_chats(username):
 def get_user(username):
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
-    c.execute("SELECT username, display_name, avatar, status, bio FROM users WHERE username=?", (username,))
+    c.execute("SELECT username, display_name, avatar, status FROM users WHERE username=?", (username,))
     row = c.fetchone()
     conn.close()
     if row:
@@ -576,8 +658,7 @@ def get_user(username):
             'username': row[0],
             'display_name': row[1],
             'avatar': row[2],
-            'status': row[3],
-            'bio': row[4]
+            'status': row[3]
         })
     return jsonify({})
 
@@ -589,40 +670,6 @@ def get_users():
     users = [r[0] for r in c.fetchall()]
     conn.close()
     return jsonify(users)
-
-@app.route('/update_profile/<username>', methods=['POST'])
-def update_profile(username):
-    data = request.json
-    conn = sqlite3.connect('pahantalk.db')
-    c = conn.cursor()
-    c.execute("UPDATE users SET display_name=?, status=?, bio=? WHERE username=?",
-              (data['display_name'], data['status'], data['bio'], username))
-    conn.commit()
-    conn.close()
-    return jsonify({'success': True})
-
-@app.route('/upload-avatar', methods=['POST'])
-def upload_avatar():
-    if 'avatar' not in request.files:
-        return jsonify({'success': False})
-    file = request.files['avatar']
-    username = request.form.get('username')
-    if file and allowed_file(file.filename):
-        filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
-        path = os.path.join(AVATAR_FOLDER, filename)
-        file.save(path)
-        url = '/avatars/' + filename
-        conn = sqlite3.connect('pahantalk.db')
-        c = conn.cursor()
-        c.execute("UPDATE users SET avatar=? WHERE username=?", (url, username))
-        conn.commit()
-        conn.close()
-        return jsonify({'success': True})
-    return jsonify({'success': False})
-
-@app.route('/avatars/<filename>')
-def avatar_file(filename):
-    return send_file(os.path.join(AVATAR_FOLDER, filename))
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
