@@ -1,4 +1,4 @@
-# server.py - ПАХАНТАЛК с профилями и аватарками
+# server.py - ПАХАНТАЛК с профилями (рабочая версия)
 from flask import Flask, request, jsonify, send_file
 import sqlite3
 from datetime import datetime
@@ -15,12 +15,11 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AVATAR_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['AVATAR_FOLDER'] = AVATAR_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# База данных
 def init_db():
     conn = sqlite3.connect('pahantalk.db')
     c = conn.cursor()
@@ -40,10 +39,10 @@ def init_db():
                   image TEXT,
                   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     try:
-        c.execute("INSERT OR IGNORE INTO users (username, password, display_name, avatar, status) VALUES (?, ?, ?, ?, ?)",
-                  ("2kenta", "123", "Кента", "/avatars/default.png", "в сети"))
-        c.execute("INSERT OR IGNORE INTO users (username, password, display_name, avatar, status) VALUES (?, ?, ?, ?, ?)",
-                  ("pahan", "123", "Пахан", "/avatars/default.png", "в сети"))
+        c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
+                  ("2kenta", "123", "Кента"))
+        c.execute("INSERT OR IGNORE INTO users (username, password, display_name) VALUES (?, ?, ?)",
+                  ("pahan", "123", "Пахан"))
     except:
         pass
     conn.commit()
@@ -51,7 +50,8 @@ def init_db():
 
 init_db()
 
-HTML = """<!DOCTYPE html>
+# ==================== HTML (вынесен отдельно) ====================
+HTML_HEAD = """<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -94,7 +94,6 @@ HTML = """<!DOCTYPE html>
             align-items: center;
             padding: 20px 0;
             border-right: 1px solid #2f2f2f;
-            position: relative;
         }
 
         .avatar {
@@ -110,14 +109,12 @@ HTML = """<!DOCTYPE html>
             font-size: 20px;
             margin-bottom: 30px;
             cursor: pointer;
-            transition: 0.2s;
             border: 2px solid transparent;
             object-fit: cover;
         }
 
         .avatar:hover {
             border-color: #4e9bef;
-            transform: scale(1.02);
         }
 
         .avatar img {
@@ -138,7 +135,6 @@ HTML = """<!DOCTYPE html>
             font-size: 24px;
             margin: 8px 0;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .nav-icon:hover {
@@ -180,12 +176,10 @@ HTML = """<!DOCTYPE html>
             width: 100%;
             font-size: 14px;
             outline: none;
-            transition: 0.2s;
         }
 
         .search-box:focus {
             border-color: #2a7ad0;
-            background: #2f2f2f;
         }
 
         .chats-list {
@@ -199,7 +193,6 @@ HTML = """<!DOCTYPE html>
             align-items: center;
             padding: 12px 16px;
             cursor: pointer;
-            transition: 0.2s;
             border-bottom: 1px solid #2a2a2a;
         }
 
@@ -222,7 +215,6 @@ HTML = """<!DOCTYPE html>
             color: white;
             font-weight: 600;
             margin-right: 12px;
-            flex-shrink: 0;
             font-size: 18px;
             object-fit: cover;
         }
@@ -340,7 +332,6 @@ HTML = """<!DOCTYPE html>
             background: #4CAF50;
             border-radius: 50%;
             margin-right: 6px;
-            display: inline-block;
         }
 
         .dialog-header-icons {
@@ -352,7 +343,6 @@ HTML = """<!DOCTYPE html>
 
         .dialog-header-icons span {
             cursor: pointer;
-            transition: 0.2s;
             width: 36px;
             height: 36px;
             display: flex;
@@ -363,7 +353,6 @@ HTML = """<!DOCTYPE html>
 
         .dialog-header-icons span:hover {
             background: #2a2a2a;
-            color: #ffffff;
         }
 
         .messages-area {
@@ -384,12 +373,6 @@ HTML = """<!DOCTYPE html>
             font-size: 14px;
             line-height: 1.5;
             position: relative;
-            animation: fadeIn 0.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .message.own {
@@ -413,22 +396,6 @@ HTML = """<!DOCTYPE html>
             cursor: pointer;
         }
 
-        .message .status {
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-            font-size: 12px;
-            margin-left: 8px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .message.own .status::after {
-            content: '✓✓';
-            letter-spacing: -2px;
-            font-size: 13px;
-            margin-left: 4px;
-        }
-
         .message small {
             display: block;
             font-size: 11px;
@@ -450,7 +417,6 @@ HTML = """<!DOCTYPE html>
             color: #8e959f;
             font-size: 24px;
             cursor: pointer;
-            transition: 0.2s;
             width: 40px;
             height: 40px;
             display: flex;
@@ -461,7 +427,6 @@ HTML = """<!DOCTYPE html>
 
         .attach-icon:hover, .emoji-icon:hover {
             background: #2a2a2a;
-            color: #ffffff;
         }
 
         .input-area input {
@@ -473,16 +438,10 @@ HTML = """<!DOCTYPE html>
             color: #ffffff;
             font-size: 14px;
             outline: none;
-            transition: 0.2s;
         }
 
         .input-area input:focus {
             border-color: #2a7ad0;
-            background: #2f2f2f;
-        }
-
-        .input-area input::placeholder {
-            color: #6b6f77;
         }
 
         .send-btn {
@@ -497,35 +456,10 @@ HTML = """<!DOCTYPE html>
             color: white;
             font-size: 20px;
             cursor: pointer;
-            transition: 0.2s;
         }
 
         .send-btn:hover {
             background: #1f6abc;
-            transform: scale(1.05);
-        }
-
-        ::-webkit-scrollbar {
-            width: 5px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #3a3a3a;
-            border-radius: 10px;
-        }
-
-        @media (max-width: 900px) {
-            .left-panel { width: 60px; }
-            .chats-panel { width: 280px; }
-        }
-
-        @media (max-width: 700px) {
-            .chats-panel { display: none; }
-            .left-panel { width: 60px; }
         }
 
         .logout-btn {
@@ -592,25 +526,6 @@ HTML = """<!DOCTYPE html>
 
         .search-result-item:hover {
             background: #3a3a3a;
-        }
-
-        .search-result-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #2a7ad0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-        }
-
-        .search-result-avatar img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
         }
 
         .profile-modal {
@@ -717,7 +632,7 @@ HTML = """<!DOCTYPE html>
         <div class="chats-panel">
             <div class="chats-header">
                 <h2>Чаты</h2>
-                <input class="search-box" id="userSearch" type="text" placeholder="Поиск пользователей..." oninput="searchUsers()">
+                <input class="search-box" id="userSearch" type="text" placeholder="Поиск..." oninput="searchUsers()">
                 <div id="searchResults" class="search-results" style="display: none;"></div>
             </div>
             <div class="chats-list" id="chatsList"></div>
@@ -733,7 +648,6 @@ HTML = """<!DOCTYPE html>
                     <div class="dialog-info">
                         <div class="dialog-name">
                             <span id="dialogName">Загрузка...</span>
-                            <span id="dialogDisplayName" style="color: #8e959f; font-size: 13px;"></span>
                             <button class="logout-btn" id="logoutBtn" onclick="logout()">Выйти</button>
                         </div>
                         <div class="dialog-status" id="dialogStatus">в сети</div>
@@ -752,20 +666,19 @@ HTML = """<!DOCTYPE html>
             <div class="input-area" id="inputArea" style="display: none;">
                 <span class="attach-icon" onclick="document.getElementById('file-input').click()">📎</span>
                 <span class="emoji-icon" onclick="toggleEmojiPicker()">😊</span>
-                <input type="text" id="messageInput" placeholder="Написать сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+                <input type="text" id="messageInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
                 <input type="file" id="file-input" accept="image/*" onchange="uploadImage()" style="display: none;">
             </div>
 
             <div id="loginScreen" style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px;">
-                <h2 style="color: white; margin-bottom: 20px;">Вход в ПАХАНТАЛК</h2>
-                <input type="text" id="loginUsername" placeholder="Логин" style="width: 80%; padding: 12px; margin: 8px; border-radius: 8px; border: none;">
-                <input type="password" id="loginPassword" placeholder="Пароль" style="width: 80%; padding: 12px; margin: 8px; border-radius: 8px; border: none;">
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button onclick="login()" style="padding: 12px 30px; background: #2a7ad0; color: white; border: none; border-radius: 8px; cursor: pointer;">Войти</button>
-                    <button onclick="register()" style="padding: 12px 30px; background: #3a3a3a; color: white; border: none; border-radius: 8px; cursor: pointer;">Регистрация</button>
+                <h2 style="color: white;">Вход</h2>
+                <input type="text" id="loginUsername" placeholder="Логин" style="width: 80%; padding: 12px; margin: 8px;">
+                <input type="password" id="loginPassword" placeholder="Пароль" style="width: 80%; padding: 12px; margin: 8px;">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="login()">Войти</button>
+                    <button onclick="register()">Регистрация</button>
                 </div>
-                <p style="color: #8e959f; margin-top: 20px;">Тестовые: 2kenta / 123</p>
             </div>
         </div>
     </div>
@@ -776,11 +689,6 @@ HTML = """<!DOCTYPE html>
         <span onclick="addEmoji('❤️')">❤️</span>
         <span onclick="addEmoji('🔥')">🔥</span>
         <span onclick="addEmoji('👍')">👍</span>
-        <span onclick="addEmoji('👎')">👎</span>
-        <span onclick="addEmoji('😢')">😢</span>
-        <span onclick="addEmoji('😍')">😍</span>
-        <span onclick="addEmoji('🎉')">🎉</span>
-        <span onclick="addEmoji('💀')">💀</span>
     </div>
 
     <div id="profileModal" style="display: none;" class="profile-modal">
@@ -791,9 +699,9 @@ HTML = """<!DOCTYPE html>
                 <span id="profileAvatarText"></span>
             </div>
             <input type="text" id="profileUsername" class="profile-input" placeholder="Логин" readonly>
-            <input type="text" id="profileDisplayName" class="profile-input" placeholder="Отображаемое имя">
+            <input type="text" id="profileDisplayName" class="profile-input" placeholder="Имя">
             <input type="text" id="profileStatus" class="profile-input" placeholder="Статус">
-            <textarea id="profileBio" class="profile-input" placeholder="О себе" rows="3"></textarea>
+            <textarea id="profileBio" class="profile-input" placeholder="О себе"></textarea>
             <div class="profile-buttons">
                 <button class="save-btn" onclick="saveProfile()">Сохранить</button>
                 <button class="cancel-btn" onclick="closeProfile()">Отмена</button>
@@ -809,281 +717,342 @@ HTML = """<!DOCTYPE html>
         let currentProfileUser = null;
 
         async function apiCall(url, data) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                return await response.json();
-            } catch(e) {
-                console.error('API Error:', e);
-                return null;
-            }
+            const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+            return r.json();
         }
 
         async function register() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            if (!username || !password) {
-                alert('Введи логин и пароль');
-                return;
-            }
-            const result = await apiCall('/register', {username, password});
-            if (result && result.success) {
-                alert('Регистрация успешна! Теперь войди.');
-            } else {
-                alert('Ошибка: пользователь уже существует');
-            }
+            const u = document.getElementById('loginUsername').value;
+            const p = document.getElementById('loginPassword').value;
+            const res = await apiCall('/register', {username:u, password:p});
+            alert(res.success ? 'OK' : 'Ошибка');
         }
 
         async function login() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            if (!username || !password) {
-                alert('Введи логин и пароль');
-                return;
-            }
-            const result = await apiCall('/login', {username, password});
-            if (result && result.success) {
-                currentUser = username;
-                localStorage.setItem('pahantalk_user', username);
+            const u = document.getElementById('loginUsername').value;
+            const p = document.getElementById('loginPassword').value;
+            const res = await apiCall('/login', {username:u, password:p});
+            if(res.success) {
+                currentUser = u;
+                localStorage.setItem('pahantalk_user', u);
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('dialogHeader').style.display = 'flex';
                 document.getElementById('inputArea').style.display = 'flex';
                 loadMyProfile();
                 loadChats();
                 loadAllUsers();
-            } else {
-                alert('Неверный логин или пароль');
-            }
-        }
-
-        async function loadMyProfile() {
-            const response = await fetch('/user/' + currentUser);
-            const user = await response.json();
-            if (user.avatar) {
-                document.getElementById('myAvatarImg').src = user.avatar;
-                document.getElementById('myAvatarImg').style.display = 'block';
-                document.getElementById('myAvatarText').style.display = 'none';
-            } else {
-                document.getElementById('myAvatarText').innerText = currentUser[0].toUpperCase();
             }
         }
 
         function logout() {
             currentUser = null;
-            currentChat = null;
             localStorage.removeItem('pahantalk_user');
-            document.getElementById('loginScreen').style.display = 'flex';
-            document.getElementById('dialogHeader').style.display = 'none';
-            document.getElementById('inputArea').style.display = 'none';
-            document.getElementById('messagesArea').innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">Выберите чат</div>';
-            document.getElementById('chatsList').innerHTML = '';
+            location.reload();
+        }
+
+        async function loadMyProfile() {
+            const r = await fetch('/user/' + currentUser);
+            const user = await r.json();
+            if(user.avatar) {
+                document.getElementById('myAvatarImg').src = user.avatar;
+                document.getElementById('myAvatarImg').style.display = 'block';
+                document.getElementById('myAvatarText').style.display = 'none';
+            }
         }
 
         async function sendMessage() {
-            if (!currentUser || !currentChat) {
-                alert('Сначала выбери чат');
-                return;
-            }
+            if(!currentChat) return;
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
-            if (!text) return;
-
-            const result = await apiCall('/send', {
-                from: currentUser,
-                to: currentChat,
-                text: text
-            });
-
-            if (result && result.success) {
-                input.value = '';
-                loadMessages();
-                loadChats();
-            }
-        }
-
-        async function uploadImage() {
-            const fileInput = document.getElementById('file-input');
-            if (!fileInput.files.length) return;
-            
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('from', currentUser);
-            formData.append('to', currentChat);
-
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                if (result.success) {
-                    loadMessages();
-                    loadChats();
-                } else {
-                    alert('Ошибка загрузки');
-                }
-            } catch(e) {
-                console.error('Upload error:', e);
-                alert('Ошибка');
-            }
-            fileInput.value = '';
-        }
-
-        async function uploadAvatar() {
-            const fileInput = document.getElementById('avatar-input');
-            if (!fileInput.files.length || !currentProfileUser) return;
-            
-            const file = fileInput.files[0];
-            const formData = new FormData();
-            formData.append('avatar', file);
-            formData.append('username', currentProfileUser);
-
-            try {
-                const response = await fetch('/upload-avatar', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                if (result.success) {
-                    if (currentProfileUser === currentUser) {
-                        loadMyProfile();
-                    }
-                    if (currentProfileUser === currentChat) {
-                        loadUserProfile(currentChat);
-                    }
-                    loadChats();
-                    alert('Аватар обновлён');
-                } else {
-                    alert('Ошибка загрузки');
-                }
-            } catch(e) {
-                console.error('Avatar upload error:', e);
-                alert('Ошибка');
-            }
-            fileInput.value = '';
-            closeProfile();
-        }
-
-        async function loadMessages() {
-            if (!currentUser || !currentChat) return;
-            try {
-                const response = await fetch('/messages/' + currentUser + '?with=' + currentChat);
-                const messages = await response.json();
-                const area = document.getElementById('messagesArea');
-                area.innerHTML = messages.reverse().map(msg => {
-                    const isOwn = msg.from === currentUser;
-                    let content = '';
-                    if (msg.text) {
-                        content = msg.text;
-                    } else if (msg.image) {
-                        content = `<img src="${msg.image}" onclick="window.open(this.src)" style="max-width: 200px; max-height: 200px;">`;
-                    }
-                    return `<div class="message ${isOwn ? 'own' : 'other'}">
-                        ${!isOwn ? '<strong>' + msg.from + '</strong>' : ''}
-                        ${content}
-                        <small>${msg.time || ''}</small>
-                        ${isOwn ? '<span class="status"></span>' : ''}
-                    </div>`;
-                }).join('');
-                area.scrollTop = area.scrollHeight;
-            } catch(e) {
-                console.error('Load messages error:', e);
-            }
-        }
-
-        async function loadChats() {
-            if (!currentUser) return;
-            try {
-                const response = await fetch('/chats/' + currentUser);
-                const chats = await response.json();
-                const list = document.getElementById('chatsList');
-                
-                for (let chat of chats) {
-                    const userResponse = await fetch('/user/' + chat.username);
-                    const user = await userResponse.json();
-                    chat.displayName = user.display_name || chat.username;
-                    chat.avatar = user.avatar;
-                }
-                
-                list.innerHTML = chats.map(chat => `
-                    <div class="chat-item ${chat.username === currentChat ? 'active' : ''}" onclick="selectChat('${chat.username}')">
-                        <div class="chat-avatar">
-                            ${chat.avatar ? `<img src="${chat.avatar}">` : chat.username[0].toUpperCase()}
-                        </div>
-                        <div class="chat-info">
-                            <div class="chat-row">
-                                <span class="chat-name">${chat.displayName}</span>
-                                <span class="chat-time">${chat.last_time || ''}</span>
-                            </div>
-                            <div class="chat-last-msg">${chat.last_msg || 'Нет сообщений'}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch(e) {
-                console.error('Load chats error:', e);
-            }
-        }
-
-        async function loadAllUsers() {
-            try {
-                const response = await fetch('/users');
-                allUsers = await response.json();
-            } catch(e) {
-                console.error('Load users error:', e);
-            }
-        }
-
-        async function searchUsers() {
-            const query = document.getElementById('userSearch').value.toLowerCase();
-            const resultsDiv = document.getElementById('searchResults');
-            if (!query || query.length < 2) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
-            
-            const filtered = allUsers.filter(u => 
-                u.toLowerCase().includes(query) && u !== currentUser
-            ).slice(0, 5);
-            
-            if (filtered.length === 0) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
-
-            let html = '';
-            for (let username of filtered) {
-                const response = await fetch('/user/' + username);
-                const user = await response.json();
-                html += `<div class="search-result-item" onclick="selectChat('${username}')">
-                    <div class="search-result-avatar">
-                        ${user.avatar ? `<img src="${user.avatar}">` : username[0].toUpperCase()}
-                    </div>
-                    <div>
-                        <div style="font-weight: 600;">${user.display_name || username}</div>
-                        <div style="font-size: 12px; color: #8e959f;">@${username}</div>
-                    </div>
-                </div>`;
-            }
-            
-            resultsDiv.innerHTML = html;
-            resultsDiv.style.display = 'block';
-        }
-
-        function selectChat(username) {
-            currentChat = username;
-            document.getElementById('searchResults').style.display = 'none';
-            document.getElementById('userSearch').value = '';
-            loadUserProfile(username);
+            if(!text) return;
+            await apiCall('/send', {from:currentUser, to:currentChat, text:text});
+            input.value = '';
             loadMessages();
             loadChats();
         }
 
-        async function loadUserProfile(username) {
-            const response = await fetch('/user/' + username);
-            const user = await response.json();
-            document.getElementById('dialogName').innerText = user.display_name || username;
-            document.getElementById('dialog
+        async function uploadImage() {
+            const input = document.getElementById('file-input');
+            if(!input.files.length) return;
+            const fd = new FormData();
+            fd.append('image', input.files[0]);
+            fd.append('from', currentUser);
+            fd.append('to', currentChat);
+            await fetch('/upload', {method:'POST', body:fd});
+            input.value = '';
+            loadMessages();
+            loadChats();
+        }
+
+        async function loadMessages() {
+            if(!currentChat) return;
+            const r = await fetch('/messages/' + currentUser + '?with=' + currentChat);
+            const msgs = await r.json();
+            const area = document.getElementById('messagesArea');
+            area.innerHTML = msgs.reverse().map(m => {
+                const own = m.from === currentUser;
+                let content = m.text || (m.image ? `<img src="${m.image}">` : '');
+                return `<div class="message ${own ? 'own' : 'other'}">
+                    ${!own ? '<b>' + m.from + '</b> ' : ''}${content}
+                    <small>${m.time || ''}</small>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadChats() {
+            const r = await fetch('/chats/' + currentUser);
+            const chats = await r.json();
+            const list = document.getElementById('chatsList');
+            list.innerHTML = '';
+            for(let c of chats) {
+                const ur = await fetch('/user/' + c.username);
+                const u = await ur.json();
+                list.innerHTML += `<div class="chat-item ${c.username === currentChat ? 'active' : ''}" onclick="selectChat('${c.username}')">
+                    <div class="chat-avatar">${u.avatar ? `<img src="${u.avatar}">` : c.username[0].toUpperCase()}</div>
+                    <div class="chat-info">
+                        <div><b>${u.display_name || c.username}</b> <small>${c.last_time || ''}</small></div>
+                        <div>${c.last_msg || ''}</div>
+                    </div>
+                </div>`;
+            }
+        }
+
+        async function loadAllUsers() {
+            const r = await fetch('/users');
+            allUsers = await r.json();
+        }
+
+        function searchUsers() {
+            const q = document.getElementById('userSearch').value.toLowerCase();
+            const res = document.getElementById('searchResults');
+            if(q.length < 2) { res.style.display = 'none'; return; }
+            const filtered = allUsers.filter(u => u.includes(q) && u !== currentUser).slice(0,5);
+            if(!filtered.length) { res.style.display = 'none'; return; }
+            res.innerHTML = filtered.map(u => `<div class="search-result-item" onclick="selectChat('${u}')">${u}</div>`).join('');
+            res.style.display = 'block';
+        }
+
+        function selectChat(u) {
+            currentChat = u;
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('userSearch').value = '';
+            document.getElementById('dialogName').innerText = u;
+            loadMessages();
+            loadChats();
+        }
+
+        function toggleEmojiPicker() {
+            const p = document.getElementById('emojiPicker');
+            p.style.display = p.style.display === 'none' ? 'grid' : 'none';
+        }
+
+        function addEmoji(e) {
+            document.getElementById('messageInput').value += e;
+            toggleEmojiPicker();
+        }
+
+        if(currentUser) {
+            (async () => {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dialogHeader').style.display = 'flex';
+                document.getElementById('inputArea').style.display = 'flex';
+                await loadMyProfile();
+                await loadChats();
+                await loadAllUsers();
+            })();
+        }
+
+        setInterval(() => { if(currentChat) loadMessages(); }, 3000);
+    </script>
+</body>
+</html>"""
+
+HTML = HTML_HEAD
+
+@app.route('/')
+def index():
+    return HTML
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.json
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+                  (data['username'], data['password']))
+        conn.commit()
+        return jsonify({'success': True})
+    except:
+        return jsonify({'success': False})
+    finally:
+        conn.close()
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("SELECT * FROM users WHERE username=? AND password=?",
+              (data['username'], data['password']))
+    user = c.fetchone()
+    conn.close()
+    return jsonify({'success': bool(user)})
+
+@app.route('/send', methods=['POST'])
+def send():
+    data = request.json
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO messages (from_user, to_user, text) VALUES (?, ?, ?)",
+              (data['from'], data['to'], data['text']))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'image' not in request.files:
+        return jsonify({'success': False})
+    file = request.files['image']
+    from_user = request.form.get('from')
+    to_user = request.form.get('to')
+    if file and allowed_file(file.filename):
+        filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(path)
+        url = '/uploads/' + filename
+        conn = sqlite3.connect('pahantalk.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO messages (from_user, to_user, image) VALUES (?, ?, ?)",
+                  (from_user, to_user, url))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route('/upload-avatar', methods=['POST'])
+def upload_avatar():
+    if 'avatar' not in request.files:
+        return jsonify({'success': False})
+    file = request.files['avatar']
+    username = request.form.get('username')
+    if file and allowed_file(file.filename):
+        filename = str(uuid.uuid4()) + '_' + secure_filename(file.filename)
+        path = os.path.join(AVATAR_FOLDER, filename)
+        file.save(path)
+        url = '/avatars/' + filename
+        conn = sqlite3.connect('pahantalk.db')
+        c = conn.cursor()
+        c.execute("UPDATE users SET avatar=? WHERE username=?", (url, username))
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True})
+    return jsonify({'success': False})
+
+@app.route('/user/<username>')
+def get_user(username):
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("SELECT username, display_name, avatar, status, bio FROM users WHERE username=?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return jsonify({
+            'username': row[0],
+            'display_name': row[1],
+            'avatar': row[2],
+            'status': row[3],
+            'bio': row[4]
+        })
+    return jsonify({})
+
+@app.route('/users')
+def get_users():
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    c.execute("SELECT username FROM users")
+    users = [r[0] for r in c.fetchall()]
+    conn.close()
+    return jsonify(users)
+
+@app.route('/messages/<username>')
+def get_messages(username):
+    with_user = request.args.get('with', '')
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    if with_user:
+        c.execute("""SELECT from_user, to_user, text, image,
+                     strftime('%H:%M', timestamp) as time 
+                     FROM messages 
+                     WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
+                     ORDER BY timestamp DESC LIMIT 50""",
+                  (username, with_user, with_user, username))
+    else:
+        c.execute("""SELECT from_user, to_user, text, image,
+                     strftime('%H:%M', timestamp) as time 
+                     FROM messages 
+                     WHERE from_user=? OR to_user=?
+                     ORDER BY timestamp DESC LIMIT 50""",
+                  (username, username))
+    msgs = []
+    for r in c.fetchall():
+        msg = {'from': r[0], 'to': r[1], 'time': r[4]}
+        if r[2]: msg['text'] = r[2]
+        if r[3]: msg['image'] = r[3]
+        msgs.append(msg)
+    conn.close()
+    return jsonify(msgs)
+
+@app.route('/chats/<username>')
+def get_chats(username):
+    conn = sqlite3.connect('pahantalk.db')
+    c = conn.cursor()
+    # Получаем список собеседников
+    c.execute("""SELECT DISTINCT 
+                    CASE WHEN from_user=? THEN to_user ELSE from_user END
+                 FROM messages 
+                 WHERE from_user=? OR to_user=?""",
+              (username, username, username))
+    
+    chats = []
+    for row in c.fetchall():
+        chat_user = row[0]
+        if not chat_user or chat_user == username:
+            continue
+        # Последнее сообщение
+        c2 = conn.cursor()
+        c2.execute("""SELECT text, image, 
+                      strftime('%H:%M', timestamp) 
+                      FROM messages 
+                      WHERE (from_user=? AND to_user=?) OR (from_user=? AND to_user=?)
+                      ORDER BY timestamp DESC LIMIT 1""",
+                   (username, chat_user, chat_user, username))
+        last = c2.fetchone()
+        last_msg = 'Нет сообщений'
+        last_time = ''
+        if last:
+            if last[0]:
+                last_msg = last[0]
+            elif last[1]:
+                last_msg = '🖼️ Фото'
+            last_time = last[2] or ''
+        chats.append({
+            'username': chat_user,
+            'last_msg': last_msg,
+            'last_time': last_time
+        })
+    conn.close()
+    return jsonify(chats)
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_file(os.path.join(UPLOAD_FOLDER, filename))
+
+@app.route('/avatars/<filename>')
+def avatar_file(filename):
+    return send_file(os.path.join(AVATAR_FOLDER, filename))
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
